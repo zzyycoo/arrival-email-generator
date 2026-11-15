@@ -85,6 +85,16 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <div class="actions"><button class="btn hide" id="png" type="button">下载表格图片 (PNG)</button></div>
   <p class="note">邮件正文自带一行一人的竖线分隔表格，任何邮件程序都能正常显示。想要带边框的表格，可以点“下载表格图片”，把图片拖进邮件正文或作为附件；点“发送邮件”时，表格也会同时复制到剪贴板，可直接粘贴（Ctrl+V / ⌘V）。</p>
 </section>
+
+<section class="panel hide" id="manual">
+  <h2>手动发送</h2>
+  <p class="note" style="margin:0 0 10px">下面的内容已全选，复制后粘贴到邮件或微信发给前台。收件人：<b>grp.arrival@thegrandhotram.com</b></p>
+  <textarea id="manualBody" rows="10" readonly style="width:100%;font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical"></textarea>
+  <div class="actions">
+    <a class="btn" id="mailtoLink" href="#">用邮件客户端打开</a>
+    <button class="btn" id="copyAgain" type="button">复制全部</button>
+  </div>
+</section>
 </div>
 </main>
 
@@ -177,7 +187,8 @@ $("saveCode").onclick = () => {
 $("rc").addEventListener("change", () => { const v = $("rc").value.trim(); if (v) setCode(v); });
 
 let dl = null;
-(async () => { try { dl = await window.claude.use("downloads"); } catch (e) {} $("png").classList.remove("hide"); })();
+// Some hosts expose a downloads API; plain browsers fall back to the anchor download below.
+(async () => { try { dl = (window.claude && typeof window.claude.use === "function") ? await window.claude.use("downloads") : null; } catch (e) { dl = null; } $("png").classList.remove("hide"); })();
 
 function tablePNG(code, guests){
   const S = 2, cols = [170, 220, 170, 190], W = cols.reduce((a,b) => a + b, 0);
@@ -223,20 +234,73 @@ $("png").onclick = async () => {
   }
 };
 
+$("copyAgain").onclick = async () => {
+  const ta = $("manualBody");
+  ta.focus();
+  ta.select();
+  ta.setSelectionRange(0, ta.value.length);
+  try {
+    await navigator.clipboard.writeText(ta.value);
+    $("err").textContent = "已复制全部内容，可直接粘贴。";
+  } catch (e) {
+    $("err").textContent = "自动复制失败，请长按或按 Ctrl+A 全选后复制。";
+  }
+};
+
+$("mailtoLink").onclick = (e) => {
+  // Keep the default mailto: behaviour, but stop the page from navigating away.
+  e.preventDefault();
+  window.location.href = $("mailtoLink").href;
+};
+
+// Detect browsers that cannot handle mailto: (WeChat / DingTalk / QQ in-app, most Android without a mail app)
+function mailtoSupported(){
+  const ua = navigator.userAgent || "";
+  if (/MicroMessenger|DingTalk|QQ\/|Weibo|Alipay/i.test(ua)) return false;
+  if (/Android/i.test(ua) && !/Chrome|Mobile Safari/i.test(ua)) return false;
+  return true;
+}
+
+function showManualPanel(){
+  $("manual").classList.remove("hide");
+  const link = $("mailtoLink");
+  link.href = `mailto:${TO}?subject=${encodeURIComponent(current.subject)}&body=${encodeURIComponent(current.text)}`;
+  $("manualBody").value = current.text;
+  $("manualBody").focus();
+  $("manualBody").select();
+  $("manual").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 $("send").onclick = async () => {
   if (!current) return;
+  const btn = $("send");
+  btn.disabled = true;
+  let copied = false;
   try {
     const blobH = new Blob([current.html], { type: "text/html" });
     const blobT = new Blob([current.text], { type: "text/plain" });
     await navigator.clipboard.write([new ClipboardItem({ "text/html": blobH, "text/plain": blobT })]);
-    $("err").textContent = "";
+    copied = true;
   } catch (e) {
-    $("err").textContent = "未能自动复制表格，请手动选中预览表格后复制，再粘贴到邮件正文。";
+    // Clipboard API needs a secure context and a user gesture; fall back to a selectable textarea.
   }
+  $("err").textContent = "";
+  $("manual").classList.add("hide");
+
+  if (!mailtoSupported()){
+    showManualPanel();
+    $("err").textContent = copied
+      ? "当前浏览器不支持直接唤起邮件客户端。表格已复制到剪贴板，请用下方文本粘贴到微信/邮件里。"
+      : "当前浏览器不支持直接唤起邮件客户端。请复制下方文本，粘贴到邮件或微信里发给前台。";
+    btn.disabled = false;
+    return;
+  }
+
   const url = `mailto:${TO}?subject=${encodeURIComponent(current.subject)}&body=${encodeURIComponent(current.text)}`;
-  const a = document.createElement("a");
-  a.href = url; a.target = "_blank"; a.rel = "noopener";
-  document.body.appendChild(a); a.click(); a.remove();
+  // No target=_blank: in-app browsers and mobile Chrome drop mailto: links that open a new tab.
+  window.location.href = url;
+  btn.disabled = false;
+  if (!copied) showManualPanel();
 };
 </script>
 </body>
