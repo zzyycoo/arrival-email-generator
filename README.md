@@ -7,11 +7,24 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.03
+Current version: v1.04
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.04
+
+- **Guests are now grouped.** Each arriving party gets its own boxed section
+  with a numbered header (客人 1, 客人 2, ...).
+- **The arrival date and time belong to the group**, so they are entered once
+  and every guest in that group shares them.
+- Adding a group creates a new box that **inherits the arrival date and time
+  from the group above it**.
+- "+ 再加一位客人" adds another guest inside the current group, for parties
+  that arrive together.
+- Validation messages now name the group (第 2 组) and, when a group has more
+  than one guest, the guest within it.
 
 ### v1.03
 
