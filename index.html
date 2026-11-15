@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Arrival Email Generator</title>
+<style>
+:root{--bg:#f3f5f4;--surface:#fff;--ink:#1d2a26;--muted:#62706b;--line:#d5dcd9;--accent:#1f5c4d;--accent-ink:#fff;--warn:#a3341f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121917;--surface:#1b2420;--ink:#e6eeea;--muted:#92a39c;--line:#33423c;--accent:#5fb89f;--accent-ink:#0c1512;--warn:#ff9b86}}
+:root[data-theme="dark"]{--bg:#121917;--surface:#1b2420;--ink:#e6eeea;--muted:#92a39c;--line:#33423c;--accent:#5fb89f;--accent-ink:#0c1512;--warn:#ff9b86}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:860px;margin:0 auto;padding:28px 18px 60px}
+h1{font-size:22px;margin:0 0 4px;font-weight:650}
+.sub{color:var(--muted);margin:0 0 22px}
+.ver{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-left:8px;vertical-align:middle}
+h2{font-size:17px;margin:0 0 12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:18px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.code{max-width:240px;margin-bottom:16px}
+.guest{display:grid;grid-template-columns:2fr 1.2fr 1.2fr .9fr auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line)}
+.guest:first-of-type{border-top:0;padding-top:0}
+.rm{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;height:38px;width:38px;cursor:pointer;font-size:18px}
+.rm:hover{color:var(--warn);border-color:var(--warn)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button.btn{font:inherit;font-weight:600;border-radius:7px;padding:9px 18px;cursor:pointer;border:1px solid var(--accent);background:transparent;color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.err{color:var(--warn);min-height:20px;margin-top:10px;font-size:14px}
+.meta{font-size:14px;margin-bottom:12px}
+.meta div{margin-bottom:2px}.meta b{color:var(--muted);font-weight:500;display:inline-block;min-width:64px}
+.paper{background:#fff;color:#111;border:1px solid var(--line);border-radius:6px;padding:16px;overflow-x:auto}
+.paper table{border-collapse:collapse;width:100%;min-width:560px;font-family:Calibri,Arial,sans-serif;font-size:14px;color:#111}
+.paper th,.paper td{border:1px solid #333;padding:8px 10px;text-align:center}
+.paper th{font-weight:700}.paper th i{display:block;font-weight:400}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.hide{display:none}
+@media (max-width:700px){.guest{grid-template-columns:1fr 1fr}.guest>.n{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<main>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.01</span></h1>
+<p class="sub">填写客人信息，生成预览，再发送给前台。</p>
+
+<section class="panel hide" id="setup">
+  <h2>首次使用：设置 Representative Code</h2>
+  <div class="code">
+    <label for="rc0">Representative Code</label>
+    <input id="rc0" value="VIE1040" autocomplete="off">
+  </div>
+  <p class="note" style="margin:0 0 12px">保存后会记在这台设备的浏览器里，下次打开自动读取。之后也可以在主页面直接修改。</p>
+  <button class="btn primary" id="saveCode" type="button">保存并开始</button>
+</section>
+
+<div id="app" class="hide">
+
+<section class="panel">
+  <div class="code">
+    <label for="rc">Representative Code</label>
+    <input id="rc" value="VIE1040" autocomplete="off">
+  </div>
+  <div id="rows"></div>
+  <div class="actions">
+    <button class="btn" id="add" type="button">添加客人</button>
+  </div>
+</section>
+
+<div class="actions" style="margin:0 0 18px">
+  <button class="btn primary" id="gen" type="button">生成预览</button>
+  <button class="btn primary" id="send" type="button" disabled>发送邮件</button>
+</div>
+<div class="err" id="err" role="alert"></div>
+
+<section class="panel hide" id="pv">
+  <div class="meta">
+    <div><b>收件人</b> <span id="to"></span></div>
+    <div><b>主题</b> <span id="subj"></span></div>
+  </div>
+  <div class="paper" id="paper"></div>
+  <div class="actions"><button class="btn hide" id="png" type="button">下载表格图片 (PNG)</button></div>
+  <p class="note">邮件正文自带一行一人的竖线分隔表格，任何邮件程序都能正常显示。想要带边框的表格，可以点“下载表格图片”，把图片拖进邮件正文或作为附件；点“发送邮件”时，表格也会同时复制到剪贴板，可直接粘贴（Ctrl+V / ⌘V）。</p>
+</section>
+</div>
+</main>
+
+<script>
+const TO = "grp.arrival@thegrandhotram.com";
+const rows = document.getElementById("rows");
+const $ = id => document.getElementById(id);
+let current = null;
+
+function addRow(){
+  const d = document.createElement("div");
+  d.className = "guest";
+  d.innerHTML = `
+    <div class="n"><label>Guest Name 客人姓名</label><input class="gn" placeholder="Nguyen Van A" autocomplete="off"></div>
+    <div><label>Date of Birth 生日</label><input class="dob" type="date"></div>
+    <div><label>Arrival Date 到达日期</label><input class="ad" type="date"></div>
+    <div><label>Time 时间</label><input class="at" type="time"></div>
+    <button class="rm" type="button" title="删除" aria-label="删除这位客人">×</button>`;
+  d.querySelector(".rm").onclick = () => { if (rows.children.length > 1) { d.remove(); invalidate(); } };
+  rows.appendChild(d);
+}
+function invalidate(){ $("send").disabled = true; }
+addRow();
+$("add").onclick = () => { addRow(); invalidate(); };
+document.addEventListener("input", invalidate);
+
+const fmt = v => { if(!v) return ""; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; };
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function collect(){
+  const code = $("rc").value.trim();
+  const guests = [...rows.children].map(r => ({
+    name: r.querySelector(".gn").value.trim(),
+    dob: fmt(r.querySelector(".dob").value),
+    ad: fmt(r.querySelector(".ad").value),
+    at: r.querySelector(".at").value
+  }));
+  return { code, guests };
+}
+
+function buildTable(code, guests){
+  const th = (en, vi) => `<th style="border:1px solid #333;padding:8px 10px;text-align:center;font-weight:700">${en}<br><i style="font-weight:400">${vi}</i></th>`;
+  const td = t => `<td style="border:1px solid #333;padding:8px 10px;text-align:center">${t}</td>`;
+  let h = `<table style="border-collapse:collapse;width:100%;font-family:Calibri,Arial,sans-serif;font-size:14px"><thead><tr>` +
+    th("Representative Code","Mã Đại Diện") + th("Guest Name","Họ &amp; Tên Khách Hàng") +
+    th("Date of Birth","Ngày tháng năm sinh") + th("Arrival Date/ Time","Ngày / Giờ đến") + `</tr></thead><tbody>`;
+  guests.forEach(g => {
+    h += `<tr>${td(esc(code))}${td(esc(g.name))}${td(g.dob)}${td(g.ad + (g.at ? `<br>${g.at}` : ""))}</tr>`;
+  });
+  return h + `</tbody></table>`;
+}
+
+function buildText(code, guests){
+  let t = "Dear HTR team,\n\nPlease find the new member arrival details below:\n\n";
+  t += "Representative Code | Guest Name | Date of Birth | Arrival Date/ Time\n";
+  t += "-------------------------------------------------------------\n";
+  guests.forEach(g => {
+    t += `${code} | ${g.name} | ${g.dob} | ${g.ad}${g.at ? " " + g.at : ""}\n`;
+  });
+  return t + "\nBest regards,";
+}
+
+$("gen").onclick = () => {
+  const { code, guests } = collect();
+  const bad = !code || guests.some(g => !g.name || !g.dob || !g.ad);
+  $("err").textContent = bad ? "请填写 Representative Code，以及每位客人的姓名、生日和到达日期。" : "";
+  if (bad) { $("pv").classList.add("hide"); invalidate(); return; }
+  const subject = `${code} new member on ${guests[0].ad}`;
+  const html = buildTable(code, guests);
+  current = { subject, html, text: buildText(code, guests) };
+  $("to").textContent = TO;
+  $("subj").textContent = subject;
+  $("paper").innerHTML = html;
+  $("pv").classList.remove("hide");
+  $("send").disabled = false;
+  $("pv").scrollIntoView({ behavior: "smooth", block: "nearest" });
+};
+
+const KEY = "htr_rep_code";
+function getCode(){ try { return localStorage.getItem(KEY); } catch (e) { return null; } }
+function setCode(v){ try { localStorage.setItem(KEY, v); } catch (e) {} }
+function showApp(code){ $("rc").value = code; $("setup").classList.add("hide"); $("app").classList.remove("hide"); }
+const savedCode = getCode();
+if (savedCode) showApp(savedCode); else $("setup").classList.remove("hide");
+$("saveCode").onclick = () => {
+  const v = $("rc0").value.trim();
+  if (!v) { $("rc0").focus(); return; }
+  setCode(v); showApp(v);
+};
+$("rc").addEventListener("change", () => { const v = $("rc").value.trim(); if (v) setCode(v); });
+
+let dl = null;
+(async () => { try { dl = await window.claude.use("downloads"); } catch (e) {} $("png").classList.remove("hide"); })();
+
+function tablePNG(code, guests){
+  const S = 2, cols = [170, 220, 170, 190], W = cols.reduce((a,b) => a + b, 0);
+  const heads = [["Representative Code","Mã Đại Diện"],["Guest Name","Họ & Tên Khách Hàng"],["Date of Birth","Ngày tháng năm sinh"],["Arrival Date/ Time","Ngày / Giờ đến"]];
+  const hasTime = guests.some(g => g.at), headH = 58, rowH = hasTime ? 54 : 38;
+  const c = document.createElement("canvas");
+  c.width = W * S; c.height = (headH + rowH * guests.length) * S;
+  const x = c.getContext("2d"); x.scale(S, S);
+  x.fillStyle = "#fff"; x.fillRect(0, 0, W, c.height / S);
+  x.strokeStyle = "#333"; x.lineWidth = 1; x.fillStyle = "#111"; x.textAlign = "center"; x.textBaseline = "middle";
+  const F = "Calibri, Arial, sans-serif";
+  let px = 0;
+  cols.forEach((w, i) => {
+    x.font = `bold 14px ${F}`; x.fillText(heads[i][0], px + w/2, 20);
+    x.font = `italic 14px ${F}`; x.fillText(heads[i][1], px + w/2, 40);
+    guests.forEach((g, r) => {
+      const cy = headH + r * rowH + rowH / 2;
+      x.font = `14px ${F}`;
+      const vals = [[code],[g.name],[g.dob],[g.ad, g.at].filter(Boolean)][i];
+      vals.forEach((v, k) => x.fillText(v, px + w/2, cy + (k - (vals.length - 1) / 2) * 18));
+    });
+    px += w;
+  });
+  for (let i = 0; i <= cols.length; i++) { const lx = cols.slice(0, i).reduce((a,b) => a + b, 0) + .5; x.beginPath(); x.moveTo(lx, .5); x.lineTo(lx, c.height / S); x.stroke(); }
+  for (let r = 0; r <= guests.length + 1; r++) { const ly = (r === 0 ? 0 : headH + (r - 1) * rowH) + .5; x.beginPath(); x.moveTo(0, ly); x.lineTo(W, ly); x.stroke(); }
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+
+$("png").onclick = async () => {
+  if (!current) return;
+  try {
+    const { code, guests } = collect();
+    const blob = await tablePNG(code, guests);
+    const filename = `${code}-arrival-table.png`;
+    if (dl) { await dl.save({ filename, data: blob }); }
+    else {
+      const u = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 1000);
+    }
+  } catch (e) {
+    if (!e || e.code !== "declined") $("err").textContent = "图片保存失败，请重试。";
+  }
+};
+
+$("send").onclick = async () => {
+  if (!current) return;
+  try {
+    const blobH = new Blob([current.html], { type: "text/html" });
+    const blobT = new Blob([current.text], { type: "text/plain" });
+    await navigator.clipboard.write([new ClipboardItem({ "text/html": blobH, "text/plain": blobT })]);
+    $("err").textContent = "";
+  } catch (e) {
+    $("err").textContent = "未能自动复制表格，请手动选中预览表格后复制，再粘贴到邮件正文。";
+  }
+  const url = `mailto:${TO}?subject=${encodeURIComponent(current.subject)}&body=${encodeURIComponent(current.text)}`;
+  const a = document.createElement("a");
+  a.href = url; a.target = "_blank"; a.rel = "noopener";
+  document.body.appendChild(a); a.click(); a.remove();
+};
+</script>
+</body>
+</html>
