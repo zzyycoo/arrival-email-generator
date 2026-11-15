@@ -22,8 +22,17 @@ label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
 input{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
 input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .code{max-width:240px;margin-bottom:16px}
-.guest{display:grid;grid-template-columns:2fr 1.2fr 1.2fr .9fr auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line)}
+.guest{display:grid;grid-template-columns:2fr 1.7fr 1.7fr .9fr auto;gap:10px;align-items:end;padding:12px 0;border-top:1px solid var(--line)}
 .guest:first-of-type{border-top:0;padding-top:0}
+.dt{display:flex;gap:6px;align-items:flex-start}
+.dt>div{flex:1;min-width:0}
+.dt input{padding:8px 4px;text-align:center}
+.dt .sep{align-self:center;padding-top:8px;color:var(--muted);font-size:13px}
+.dt small{display:block;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.2}
+.dt.bad input{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--bg))}
+.dt.bad small{color:var(--warn)}
+.hint{font-size:12px;color:var(--warn);margin-top:6px;display:none}
+.hint.on{display:block}
 .rm{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;height:38px;width:38px;cursor:pointer;font-size:18px}
 .rm:hover{color:var(--warn);border-color:var(--warn)}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
@@ -39,7 +48,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .paper th{font-weight:700}.paper th i{display:block;font-weight:400}
 .note{font-size:13px;color:var(--muted);margin-top:10px}
 .hide{display:none}
-@media (max-width:700px){.guest{grid-template-columns:1fr 1fr}.guest>.n{grid-column:1/-1}}
+@media (max-width:700px){.guest{grid-template-columns:1fr 1fr}.guest>.n{grid-column:1/-1}.guest>.dt-wrap{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -109,11 +118,30 @@ function addRow(){
   d.className = "guest";
   d.innerHTML = `
     <div class="n"><label>Guest Name 客人姓名</label><input class="gn" placeholder="Nguyen Van A" autocomplete="off"></div>
-    <div><label>Date of Birth 生日</label><input class="dob" type="date"></div>
-    <div><label>Arrival Date 到达日期</label><input class="ad" type="date"></div>
+    <div class="dt-wrap">
+      <label>Date of Birth 生日</label>
+      <div class="dt dob-dt">
+        <div><input class="dd" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="DD" aria-label="出生日"><small>日</small></div>
+        <span class="sep">/</span>
+        <div><input class="mm" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" aria-label="出生月"><small>月</small></div>
+        <span class="sep">/</span>
+        <div><input class="yy" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="YYYY" aria-label="出生年"><small>年</small></div>
+      </div>
+    </div>
+    <div class="dt-wrap">
+      <label>Arrival Date 到达日期</label>
+      <div class="dt ad-dt">
+        <div><input class="dd" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="DD" aria-label="到达日"><small>日</small></div>
+        <span class="sep">/</span>
+        <div><input class="mm" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" aria-label="到达月"><small>月</small></div>
+        <span class="sep">/</span>
+        <div><input class="yy" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="YYYY" aria-label="到达年"><small>年</small></div>
+      </div>
+    </div>
     <div><label>Time 时间</label><input class="at" type="time"></div>
     <button class="rm" type="button" title="删除" aria-label="删除这位客人">×</button>`;
   d.querySelector(".rm").onclick = () => { if (rows.children.length > 1) { d.remove(); invalidate(); } };
+  bindDateInputs(d);
   rows.appendChild(d);
 }
 function invalidate(){ $("send").disabled = true; }
@@ -121,18 +149,105 @@ addRow();
 $("add").onclick = () => { addRow(); invalidate(); };
 document.addEventListener("input", invalidate);
 
-const fmt = v => { if(!v) return ""; const [y,m,d]=v.split("-"); return `${d}/${m}/${y}`; };
+// ---- Date part inputs: digits only, with real calendar validation ----
+const TODAY = new Date();
+const MAX_YEAR = TODAY.getFullYear() + 10;
+const MIN_YEAR = 1900;
+
+function daysInMonth(y, m){
+  if (m < 1 || m > 12) return 0;
+  return new Date(y, m, 0).getDate(); // day 0 of next month = last day of this month
+}
+
+// Strip every non-digit; used on both paste and keystroke.
+function digitsOnly(el){
+  const v = el.value.replace(/\D/g, "");
+  if (v !== el.value) el.value = v;
+  return v;
+}
+
+// Validate one .dt group. Returns {ok, text, d, m, y} where d/m/y are numbers.
+function validateDateGroup(group, kind){
+  const dEl = group.querySelector(".dd"), mEl = group.querySelector(".mm"), yEl = group.querySelector(".yy");
+  const ds = digitsOnly(dEl), ms = digitsOnly(mEl), ys = digitsOnly(yEl);
+  const d = ds === "" ? NaN : parseInt(ds, 10);
+  const m = ms === "" ? NaN : parseInt(ms, 10);
+  const y = ys === "" ? NaN : parseInt(ys, 10);
+  const parts = [dEl, mEl, yEl];
+
+  let msg = "";
+  if (ds === "" || ms === "" || ys === ""){
+    msg = "请填写完整的日 / 月 / 年";
+  } else if (m < 1 || m > 12){
+    msg = `月份必须是 1-12（现在是 ${m}）`;
+  } else if (y < MIN_YEAR || y > MAX_YEAR){
+    msg = `年份必须是 ${MIN_YEAR}-${MAX_YEAR}（现在是 ${y}）`;
+  } else if (d < 1 || d > daysInMonth(y, m)){
+    msg = `${y} 年 ${m} 月只有 ${daysInMonth(y, m)} 天（现在是 ${d} 日）`;
+  } else if (kind === "dob" && d > TODAY.getDate() && m === TODAY.getMonth() + 1 && y === TODAY.getFullYear()){
+    msg = "出生日期不能是今天";
+  } else if (kind === "dob" && y > TODAY.getFullYear()){
+    msg = "出生日期不能在未来";
+  }
+
+  const bad = !!msg;
+  group.classList.toggle("bad", bad);
+  const labels = group.querySelectorAll("small");
+  const units = ["日", "月", "年"];
+  labels.forEach((s, i) => { s.textContent = bad && i === 0 ? msg : units[i]; });
+  return { ok: !bad, msg, d, m, y, raw: { d: ds, m: ms, y: ys } };
+}
+
+function bindDateInputs(row){
+  row.querySelectorAll(".dt").forEach(group => {
+    const kind = group.classList.contains("dob-dt") ? "dob" : "ad";
+    const inputs = group.querySelectorAll("input");
+    inputs.forEach((el, idx) => {
+      el.addEventListener("input", () => {
+        digitsOnly(el);
+        // auto-advance: day(2) -> month -> year
+        if (el.value.length === el.maxLength && idx < inputs.length - 1) inputs[idx + 1].focus();
+        validateDateGroup(group, kind);
+        invalidate();
+      });
+      el.addEventListener("blur", () => validateDateGroup(group, kind));
+      el.addEventListener("paste", e => {
+        e.preventDefault();
+        const t = (e.clipboardData || window.clipboardData).getData("text").replace(/\D/g, "");
+        const max = el.maxLength;
+        el.value = t.slice(0, max);
+        validateDateGroup(group, kind);
+        invalidate();
+      });
+      el.addEventListener("keydown", e => {
+        if (e.key === "Enter"){ e.preventDefault(); inputs[Math.min(idx + 1, inputs.length - 1)].focus(); }
+      });
+    });
+  });
+}
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function collect(){
   const code = $("rc").value.trim();
-  const guests = [...rows.children].map(r => ({
-    name: r.querySelector(".gn").value.trim(),
-    dob: fmt(r.querySelector(".dob").value),
-    ad: fmt(r.querySelector(".ad").value),
-    at: r.querySelector(".at").value
-  }));
-  return { code, guests };
+  const errors = [];
+  const guests = [...rows.children].map((r, i) => {
+    const n = i + 1;
+    const dobG = r.querySelector(".dob-dt"), adG = r.querySelector(".ad-dt");
+    const dob = validateDateGroup(dobG, "dob");
+    const ad = validateDateGroup(adG, "ad");
+    const name = r.querySelector(".gn").value.trim();
+    if (!name) errors.push(`第 ${n} 位客人：缺少姓名`);
+    if (!dob.ok) errors.push(`第 ${n} 位客人 · 生日：${dob.msg}`);
+    if (!ad.ok) errors.push(`第 ${n} 位客人 · 到达日期：${ad.msg}`);
+    return {
+      name,
+      dob: dob.ok ? `${String(dob.d).padStart(2,"0")}/${String(dob.m).padStart(2,"0")}/${dob.y}` : "",
+      ad: ad.ok ? `${String(ad.d).padStart(2,"0")}/${String(ad.m).padStart(2,"0")}/${ad.y}` : "",
+      at: r.querySelector(".at").value
+    };
+  });
+  if (!code) errors.push("请填写 Representative Code");
+  return { code, guests, errors };
 }
 
 function buildTable(code, guests){
@@ -158,13 +273,17 @@ function buildText(code, guests){
 }
 
 $("gen").onclick = () => {
-  const { code, guests } = collect();
-  const bad = !code || guests.some(g => !g.name || !g.dob || !g.ad);
-  $("err").textContent = bad ? "请填写 Representative Code，以及每位客人的姓名、生日和到达日期。" : "";
-  if (bad) { $("pv").classList.add("hide"); invalidate(); return; }
+  const { code, guests, errors } = collect();
+  if (errors.length){
+    $("err").innerHTML = errors.map(e => `• ${esc(e)}`).join("<br>");
+    $("pv").classList.add("hide");
+    invalidate();
+    return;
+  }
+  $("err").textContent = "";
   const subject = `${code} new member on ${guests[0].ad}`;
   const html = buildTable(code, guests);
-  current = { subject, html, text: buildText(code, guests) };
+  current = { code, guests, subject, html, text: buildText(code, guests) };
   $("to").textContent = TO;
   $("subj").textContent = subject;
   $("paper").innerHTML = html;
@@ -220,7 +339,16 @@ function tablePNG(code, guests){
 $("png").onclick = async () => {
   if (!current) return;
   try {
-    const { code, guests } = collect();
+    // Re-read the fields so a PNG always matches what is on screen, but keep the
+    // validated dates captured at preview time.
+    const code = $("rc").value.trim() || current.code;
+    const live = collect();
+    const guests = live.guests.map((g, i) => ({
+      name: g.name,
+      dob: g.dob || (current.guests[i] && current.guests[i].dob) || "",
+      ad: g.ad || (current.guests[i] && current.guests[i].ad) || "",
+      at: g.at
+    }));
     const blob = await tablePNG(code, guests);
     const filename = `${code}-arrival-table.png`;
     if (dl) { await dl.save({ filename, data: blob }); }
