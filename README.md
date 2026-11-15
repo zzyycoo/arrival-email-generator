@@ -7,6 +7,30 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.01
+Current version: v1.02
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
+
+## Changelog
+
+### v1.02
+
+- **Date inputs rebuilt**: day / month / year are three separate boxes instead of a
+  native date picker. Digits only (typing and pasting), auto-advance to the next
+  box, Enter moves on as well.
+- **Real calendar validation**: month must be 1-12, the day must exist in that
+  month for that year (leap years included), the year must be between 1900 and
+  the current year + 10, and a date of birth cannot be today or in the future.
+  Invalid fields turn red and show the reason underneath.
+- **Preview lists every problem** instead of one generic message, and each guest
+  is identified by position.
+- **Fixed "send email" doing nothing**: the mailto: link no longer opens in a
+  new tab (in-app browsers and mobile Chrome silently discarded it). Browsers
+  without mailto: support (WeChat, DingTalk, QQ, Android without a mail app)
+  now get a manual send panel with the text selected and a copy button.
+- Arrival dates use the same component inputs.
+
+### v1.01
+
+- First release: guest rows, table preview, mailto: send with clipboard copy,
+  PNG table download, representative code stored in the browser.
