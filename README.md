@@ -7,11 +7,19 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.02
+Current version: v1.03
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.03
+
+- **Arrival date goes back to the native date picker.** The day / month / year
+  boxes are now used for the date of birth only; the arrival date uses the
+  browser's calendar control again.
+- The arrival date picker is limited to today through one year from now.
+- The table still shows both dates as dd/mm/yyyy.
 
 ### v1.02
 
