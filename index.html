@@ -62,7 +62,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <main>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.04</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.05</span></h1>
 <p class="sub">填写客人信息，生成预览，再发送给前台。同行到达的客人请放同一组，只需填一次到达日期和时间。</p>
 
 <section class="panel hide" id="setup">
@@ -102,12 +102,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
   </div>
   <div class="paper" id="paper"></div>
   <div class="actions"><button class="btn hide" id="png" type="button">下载表格图片 (PNG)</button></div>
-  <p class="note">邮件正文自带一行一人的竖线分隔表格，任何邮件程序都能正常显示。想要带边框的表格，可以点“下载表格图片”，把图片拖进邮件正文或作为附件；点“发送邮件”时，表格也会同时复制到剪贴板，可直接粘贴（Ctrl+V / ⌘V）。</p>
+  <p class="note">点“发送邮件”时，表格会自动复制到剪贴板，邮件客户端打开后直接在正文里按 Ctrl+V / ⌘V 粘贴即可。想要带边框的表格，可以点“下载表格图片”，把图片拖进邮件正文或作为附件。</p>
 </section>
 
 <section class="panel hide" id="manual">
   <h2>手动发送</h2>
-  <p class="note" style="margin:0 0 10px">下面的内容已全选，复制后粘贴到邮件或微信发给前台。收件人：<b>grp.arrival@thegrandhotram.com</b></p>
+  <p class="note" style="margin:0 0 10px">下面的客人信息已全选，复制后粘贴到邮件或微信发给前台。收件人：<b>grp.arrival@thegrandhotram.com</b></p>
   <textarea id="manualBody" rows="10" readonly style="width:100%;font:inherit;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical"></textarea>
   <div class="actions">
     <a class="btn" id="mailtoLink" href="#">用邮件客户端打开</a>
@@ -353,14 +353,16 @@ function buildTable(code, guests){
   return h + `</tbody></table>`;
 }
 
-function buildText(code, guests){
-  let t = "Dear HTR team,\n\nPlease find the new member arrival details below:\n\n";
-  t += "Representative Code | Guest Name | Date of Birth | Arrival Date/ Time\n";
-  t += "-------------------------------------------------------------\n";
-  guests.forEach(g => {
-    t += `${code} | ${g.name} | ${g.dob} | ${g.ad}${g.at ? " " + g.at : ""}\n`;
-  });
-  return t + "\nBest regards,";
+// The mail body only carries a short greeting. The guest table is pasted
+// from the clipboard, so it must not be duplicated here as plain text.
+function buildBody(){
+  return "Dear HTR team,\n\nPlease find the new member arrival details below.\n\nBest regards,";
+}
+
+// The clipboard carries the table itself: HTML for rich mail clients, and a
+// plain-text rendering of the same table as a fallback.
+function buildTableText(guests){
+  return guests.map(g => `${g.name} | ${g.dob} | ${g.ad}${g.at ? " " + g.at : ""}`).join("\n");
 }
 
 $("gen").onclick = () => {
@@ -374,7 +376,7 @@ $("gen").onclick = () => {
   $("err").textContent = "";
   const subject = `${code} new member on ${guests[0].ad}`;
   const html = buildTable(code, guests);
-  current = { code, guests, subject, html, text: buildText(code, guests) };
+  current = { code, guests, subject, html, text: buildBody() };
   $("to").textContent = TO;
   $("subj").textContent = subject;
   $("paper").innerHTML = html;
@@ -484,7 +486,7 @@ function showManualPanel(){
   $("manual").classList.remove("hide");
   const link = $("mailtoLink");
   link.href = `mailto:${TO}?subject=${encodeURIComponent(current.subject)}&body=${encodeURIComponent(current.text)}`;
-  $("manualBody").value = current.text;
+  $("manualBody").value = buildTableText(current.guests);
   $("manualBody").focus();
   $("manualBody").select();
   $("manual").scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -497,7 +499,7 @@ $("send").onclick = async () => {
   let copied = false;
   try {
     const blobH = new Blob([current.html], { type: "text/html" });
-    const blobT = new Blob([current.text], { type: "text/plain" });
+    const blobT = new Blob([buildTableText(current.guests)], { type: "text/plain" });
     await navigator.clipboard.write([new ClipboardItem({ "text/html": blobH, "text/plain": blobT })]);
     copied = true;
   } catch (e) {
@@ -509,8 +511,8 @@ $("send").onclick = async () => {
   if (!mailtoSupported()){
     showManualPanel();
     $("err").textContent = copied
-      ? "当前浏览器不支持直接唤起邮件客户端。表格已复制到剪贴板，请用下方文本粘贴到微信/邮件里。"
-      : "当前浏览器不支持直接唤起邮件客户端。请复制下方文本，粘贴到邮件或微信里发给前台。";
+      ? "当前浏览器不支持直接唤起邮件客户端。表格已复制到剪贴板，请直接粘贴到邮件正文。"
+      : "当前浏览器不支持直接唤起邮件客户端。表格已复制失败，请在预览区手动复制表格后粘贴。";
     btn.disabled = false;
     return;
   }
