@@ -62,7 +62,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <main>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.05</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.06</span></h1>
 <p class="sub">填写客人信息，生成预览，再发送给前台。同行到达的客人请放同一组，只需填一次到达日期和时间。</p>
 
 <section class="panel hide" id="setup">
@@ -305,6 +305,18 @@ function bindDateInputs(row){
 }
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+// English short month names, as the hotel expects them.
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// DD-Mon-YYYY, e.g. 02-Nov-2026
+function fmtDateEn(d, m, y){
+  return `${String(d).padStart(2,"0")}-${MONTHS[m - 1]}-${y}`;
+}
+// DD-Mon, e.g. 13-Nov
+function fmtDateShort(d, m){
+  return `${String(d).padStart(2,"0")}-${MONTHS[m - 1]}`;
+}
+
 function collect(){
   const code = $("rc").value.trim();
   const errors = [];
@@ -322,23 +334,19 @@ function collect(){
       if (!name) errors.push(`${who}：缺少姓名`);
       if (!dob.ok) errors.push(`${who} · 生日：${dob.msg}`);
       if (!adRaw) errors.push(`${who} · 到达日期：请选择日期`);
+      // Keep the raw yyyy-mm-dd so the subject can be built with a short date.
+      const adParts = adRaw ? adRaw.split("-").map(Number) : null;
       guests.push({
         name,
-        dob: dob.ok ? `${String(dob.d).padStart(2,"0")}/${String(dob.m).padStart(2,"0")}/${dob.y}` : "",
-        ad: adRaw ? fmtDate(adRaw) : "",
+        dob: dob.ok ? fmtDateEn(dob.d, dob.m, dob.y) : "",
+        ad: adParts ? fmtDateEn(adParts[2], adParts[1], adParts[0]) : "",
+        adShort: adParts ? fmtDateShort(adParts[2], adParts[1]) : "",
         at
       });
     });
   });
   if (!code) errors.push("请填写 Representative Code");
   return { code, guests, errors };
-}
-
-// Native date input gives yyyy-mm-dd; the table uses dd/mm/yyyy.
-function fmtDate(v){
-  if (!v) return "";
-  const [y, m, d] = v.split("-");
-  return `${d}/${m}/${y}`;
 }
 
 function buildTable(code, guests){
@@ -374,7 +382,10 @@ $("gen").onclick = () => {
     return;
   }
   $("err").textContent = "";
-  const subject = `${code} new member on ${guests[0].ad}`;
+  // Subject uses the short form, e.g. "13-Nov". With several arrival dates,
+  // list them all so the front desk is not left guessing.
+  const shortDates = [...new Set(guests.map(g => g.adShort).filter(Boolean))];
+  const subject = `${code} new member on ${shortDates.join(", ")}`;
   const html = buildTable(code, guests);
   current = { code, guests, subject, html, text: buildBody() };
   $("to").textContent = TO;
