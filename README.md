@@ -7,11 +7,19 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.05
+Current version: v1.06
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.06
+
+- **Dates now use English month names.** In the table and the clipboard the
+  date of birth and the arrival date read `02-Nov-2026`; the subject uses the
+  short form `13-Nov`.
+- When several arrival dates are involved the subject lists them all, e.g.
+  `VIE1040 new member on 13-Nov, 25-Dec`.
 
 ### v1.05
 
