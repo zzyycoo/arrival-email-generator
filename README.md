@@ -7,11 +7,21 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.04
+Current version: v1.05
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.05
+
+- **The mail body no longer repeats the guest details.** Opening the mail client
+  now carries only a short greeting; the table is pasted from the clipboard
+  instead, so it is not duplicated as plain text.
+- The clipboard still holds the table twice: HTML for rich mail clients and a
+  plain-text rendering as a fallback for clients that ignore HTML.
+- The manual send panel shows the guest rows so they can be copied into
+  WeChat or any other app.
 
 ### v1.04
 
