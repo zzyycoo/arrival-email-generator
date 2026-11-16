@@ -62,7 +62,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <main>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.06</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.07</span></h1>
 <p class="sub">填写客人信息，生成预览，再发送给前台。同行到达的客人请放同一组，只需填一次到达日期和时间。</p>
 
 <section class="panel hide" id="setup">
@@ -183,6 +183,7 @@ function addGroup(shared){
       if (guestsBox.children.length > 1) { row.remove(); invalidate(); }
     };
     bindDateInputs(row);
+    bindNameInput(row.querySelector(".gn"));
     guestsBox.appendChild(row);
     return row;
   };
@@ -213,6 +214,34 @@ function addGroup(shared){
 function renumber(){
   [...rows.children].forEach((g, i) => {
     g.querySelector(".num").textContent = `客人 ${i + 1}`;
+  });
+}
+
+// Capitalise a guest name in place while keeping the caret where it was.
+// Handles the Vietnamese letters (Đ đ, Ơ ơ, Ư ư) that toUpperCase leaves alone.
+const VN_UPPER = { "đ": "Đ", "ơ": "Ơ", "ư": "Ư" };
+function toUpperCaseName(s){
+  return s.replace(/[a-zà-ỹđơư]/g, ch => {
+    if (VN_UPPER[ch]) return VN_UPPER[ch];
+    return ch.toUpperCase();
+  });
+}
+function bindNameInput(input){
+  input.addEventListener("input", () => {
+    const start = input.selectionStart, end = input.selectionEnd;
+    const before = input.value;
+    const after = toUpperCaseName(before);
+    if (after !== before){
+      input.value = after;
+      // Only restore the caret when the length is unchanged (no surrogate splits).
+      if (before.length === after.length){
+        try { input.setSelectionRange(start, end); } catch (e) {}
+      }
+    }
+  });
+  // Paste may not fire input on some browsers.
+  input.addEventListener("paste", () => {
+    setTimeout(() => { input.value = toUpperCaseName(input.value); }, 0);
   });
 }
 
@@ -383,9 +412,11 @@ $("gen").onclick = () => {
   }
   $("err").textContent = "";
   // Subject uses the short form, e.g. "13-Nov". With several arrival dates,
-  // list them all so the front desk is not left guessing.
+  // list them all so the front desk is not left guessing. The first guest's
+  // name follows the representative code.
   const shortDates = [...new Set(guests.map(g => g.adShort).filter(Boolean))];
-  const subject = `${code} new member on ${shortDates.join(", ")}`;
+  const firstName = guests[0] && guests[0].name ? guests[0].name : "";
+  const subject = `${code}${firstName ? " " + firstName : ""} new member on ${shortDates.join(", ")}`;
   const html = buildTable(code, guests);
   current = { code, guests, subject, html, text: buildBody() };
   $("to").textContent = TO;
