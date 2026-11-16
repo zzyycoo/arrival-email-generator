@@ -7,7 +7,7 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.07
+Current version: v1.08
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
@@ -17,8 +17,9 @@ Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 - **The subject now carries the first guest's name**, e.g.
   `VIE1040 Nguyen Van A new member on 13-Nov`.
-- **Guest names are capitalised as you type**, including the Vietnamese
-  letters Đ, Ơ and Ư. The caret stays where it was.
+- **Guest names are capitalised as you type**, so a name entered as
+  `nguyen van a` becomes `NGUYEN VAN A` straight away. The caret stays where
+  it was.
 
 ### v1.06
 
