@@ -62,7 +62,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </head>
 <body>
 <main>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.07</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.08</span></h1>
 <p class="sub">填写客人信息，生成预览，再发送给前台。同行到达的客人请放同一组，只需填一次到达日期和时间。</p>
 
 <section class="panel hide" id="setup">
@@ -218,13 +218,10 @@ function renumber(){
 }
 
 // Capitalise a guest name in place while keeping the caret where it was.
-// Handles the Vietnamese letters (Đ đ, Ơ ơ, Ư ư) that toUpperCase leaves alone.
-const VN_UPPER = { "đ": "Đ", "ơ": "Ơ", "ư": "Ư" };
+// Names are typed in pinyin, so plain upper casing is enough; accented
+// letters such as Á or É are handled by toUpperCase as well.
 function toUpperCaseName(s){
-  return s.replace(/[a-zà-ỹđơư]/g, ch => {
-    if (VN_UPPER[ch]) return VN_UPPER[ch];
-    return ch.toUpperCase();
-  });
+  return s.toUpperCase();
 }
 function bindNameInput(input){
   input.addEventListener("input", () => {
