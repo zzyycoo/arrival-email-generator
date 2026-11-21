@@ -11,11 +11,20 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.10
+Current version: v1.11
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.11
+
+- **The generated email keeps its original English format** whichever
+  interface language is selected. The subject still reads
+  `VIE1040 Nguyen Van A new member on 13-Nov` and the body still opens with
+  `Dear HTR team,`.
+- The table header is fixed as well: English on top, Vietnamese underneath.
+- Only the interface is translated.
 
 ### v1.10
 
