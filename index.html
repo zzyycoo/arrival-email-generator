@@ -165,6 +165,9 @@ const I18N = {
     delGroup: "删除这一组",
     // guest number badge
     guestNo: "客人",
+    phName: "Nguyen Van A",
+    phDobDay: "DD", phDobMonth: "MM", phDobYear: "YYYY",
+    ariaDobDay: "出生日", ariaDobMonth: "出生月", ariaDobYear: "出生年",
     // date part units
     unitDay: "日", unitMonth: "月", unitYear: "年",
     // errors
@@ -224,6 +227,9 @@ const I18N = {
     delGuest: "Remove this guest",
     delGroup: "Remove this group",
     guestNo: "Guest",
+    phName: "Nguyen Van A",
+    phDobDay: "DD", phDobMonth: "MM", phDobYear: "YYYY",
+    ariaDobDay: "Day of birth", ariaDobMonth: "Birth month", ariaDobYear: "Birth year",
     unitDay: "Day", unitMonth: "Month", unitYear: "Year",
     errNoName: "name is missing",
     errDobIncomplete: "please fill in the day, month and year",
@@ -277,6 +283,9 @@ const I18N = {
     delGuest: "Xoá khách này",
     delGroup: "Xoá nhóm này",
     guestNo: "Khách",
+    phName: "Nguyen Van A",
+    phDobDay: "DD", phDobMonth: "MM", phDobYear: "YYYY",
+    ariaDobDay: "Ngày sinh", ariaDobMonth: "Tháng sinh", ariaDobYear: "Năm sinh",
     unitDay: "Ngày", unitMonth: "Tháng", unitYear: "Năm",
     errNoName: "thiếu họ tên",
     errDobIncomplete: "vui lòng nhập đầy đủ ngày, tháng, năm",
@@ -322,6 +331,14 @@ function applyI18n(){
   document.querySelectorAll("[data-i18n-title]").forEach(el => {
     const v = t(el.dataset.i18nTitle);
     if (v) el.title = v;
+  });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    const v = t(el.dataset.i18nAria);
+    if (v) el.setAttribute("aria-label", v);
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const v = t(el.dataset.i18nPh);
+    if (v) el.placeholder = v;
   });
   document.querySelectorAll("#langbar button").forEach(b => {
     b.classList.toggle("on", b.dataset.lang === LANG);
@@ -370,14 +387,14 @@ function guestRowHTML(){
     <div class="dt-wrap">
       <label data-i18n="dob"></label>
       <div class="dt dob-dt">
-        <div><input class="dd" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="DD" aria-label="出生日"><small>日</small></div>
+        <div><input class="dd" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="DD" data-i18n-ph="phDobDay" data-i18n-aria="ariaDobDay"><small>日</small></div>
         <span class="sep">/</span>
-        <div><input class="mm" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" aria-label="出生月"><small>月</small></div>
+        <div><input class="mm" inputmode="numeric" pattern="[0-9]*" maxlength="2" placeholder="MM" data-i18n-ph="phDobMonth" data-i18n-aria="ariaDobMonth"><small>月</small></div>
         <span class="sep">/</span>
-        <div><input class="yy" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="YYYY" aria-label="出生年"><small>年</small></div>
+        <div><input class="yy" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="YYYY" data-i18n-ph="phDobYear" data-i18n-aria="ariaDobYear"><small>年</small></div>
       </div>
     </div>
-    <div><button class="rm" type="button" data-i18n-title="delGuest" title="删除这位客人" aria-label="删除这位客人">×</button></div>`;
+    <div><button class="rm" type="button" data-i18n-title="delGuest" data-i18n-aria="delGuest" title="删除这位客人" aria-label="删除这位客人">×</button></div>`;
 }
 
 function addGroup(shared){
@@ -388,7 +405,7 @@ function addGroup(shared){
       <span class="num"></span>
       <span class="glabel" data-i18n="groupLabel"></span>
       <span class="sp"></span>
-      <button class="rm" type="button" data-i18n-title="delGroup" title="删除这一组" aria-label="删除这一组">×</button>
+      <button class="rm" type="button" data-i18n-title="delGroup" data-i18n-aria="delGroup" title="删除这一组" aria-label="删除这一组">×</button>
     </div>
     <div class="shared">
       <div><label data-i18n="arrivalDate"></label><input class="ad" type="date" min="${isoToday()}" max="${isoOneYear()}"></div>
@@ -441,6 +458,14 @@ function addGroup(shared){
   g.querySelectorAll("[data-i18n-title]").forEach(el => {
     const v = t(el.dataset.i18nTitle);
     if (v) el.title = v;
+  });
+  g.querySelectorAll("[data-i18n-aria]").forEach(el => {
+    const v = t(el.dataset.i18nAria);
+    if (v) el.setAttribute("aria-label", v);
+  });
+  g.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const v = t(el.dataset.i18nPh);
+    if (v) el.placeholder = v;
   });
   g.querySelectorAll(".dt").forEach(dt => {
     const units = [t("unitDay"), t("unitMonth"), t("unitYear")];
