@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.10</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.11</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -188,11 +188,6 @@ const I18N = {
     mailGreeting: "Dear HTR team,",
     mailIntro: "Please find the new member arrival details below.",
     mailSign: "Best regards,",
-    // table headers
-    thCode: "Representative Code", thCodeVi: "Mã Đại Diện",
-    thName: "Guest Name", thNameVi: "Họ &amp; Tên Khách Hàng",
-    thDob: "Date of Birth", thDobVi: "Ngày tháng năm sinh",
-    thAd: "Arrival Date/ Time", thAdVi: "Ngày / Giờ đến",
     // subject
     subjNewMember: "new member on",
     // misc
@@ -247,10 +242,6 @@ const I18N = {
     mailGreeting: "Dear HTR team,",
     mailIntro: "Please find the new member arrival details below.",
     mailSign: "Best regards,",
-    thCode: "Representative Code", thCodeVi: "Mã Đại Diện",
-    thName: "Guest Name", thNameVi: "Họ & Tên Khách Hàng",
-    thDob: "Date of Birth", thDobVi: "Ngày tháng năm sinh",
-    thAd: "Arrival Date/ Time", thAdAd: "", thAdVi: "Ngày / Giờ đến",
     subjNewMember: "new member on",
     noMailApp: "This browser cannot open a mail app directly. The table has been copied to the clipboard, paste it into the message body.",
     noMailAppNoCopy: "This browser cannot open a mail app directly. Copying the table failed, copy it from the preview and paste it in.",
@@ -300,14 +291,11 @@ const I18N = {
     errDayRange: "tháng {m}/{y} chỉ có {d} ngày (đang là ngày {d2})",
     errDobToday: "ngày sinh không thể là hôm nay",
     errDobFuture: "ngày sinh không thể ở tương lai",
-    mailGreeting: "Kính gửi đội ngũ HTR,",
-    mailIntro: "Vui lòng xem thông tin khách đến mới bên dưới.",
-    mailSign: "Trân trọng,",
-    thCode: "Mã Đại Diện", thCodeVi: "Mã Đại Diện",
-    thName: "Họ & Tên Khách Hàng", thNameVi: "Họ & Tên Khách Hàng",
-    thDob: "Ngày tháng năm sinh", thDobVi: "Ngày tháng năm sinh",
-    thAd: "Ngày / Giờ đến", thAdVi: "Ngày / Giờ đến",
-    subjNewMember: "khách mới đến ngày",
+    // The generated email stays in English whatever the interface language is.
+    mailGreeting: "Dear HTR team,",
+    mailIntro: "Please find the new member arrival details below.",
+    mailSign: "Best regards,",
+    subjNewMember: "new member on",
     noMailApp: "Trình duyệt này không mở được ứng dụng email. Bảng đã được sao chép vào bộ nhớ tạm, hãy dán vào nội dung email.",
     noMailAppNoCopy: "Trình duyệt này không mở được ứng dụng email. Sao chép bảng thất bại, hãy copy từ phần xem trước rồi dán vào.",
     pngFail: "Không lưu được ảnh, vui lòng thử lại."
@@ -641,12 +629,12 @@ function collect(){
 }
 
 function buildTable(code, guests){
-  // Two lines when the header differs between the two languages, one otherwise.
-  const th = (a, b) => `<th style="border:1px solid #333;padding:8px 10px;text-align:center;font-weight:700">${a}${a === b ? "" : `<br><i style="font-weight:400">${b}</i>`}</th>`;
+  // The table header is fixed: English on top, Vietnamese underneath.
+  const th = (en, vi) => `<th style="border:1px solid #333;padding:8px 10px;text-align:center;font-weight:700">${en}<br><i style="font-weight:400">${vi}</i></th>`;
   const td = t => `<td style="border:1px solid #333;padding:8px 10px;text-align:center">${t}</td>`;
   let h = `<table style="border-collapse:collapse;width:100%;font-family:Calibri,Arial,sans-serif;font-size:14px"><thead><tr>` +
-    th(t("thCode"), t("thCodeVi")) + th(t("thName"), t("thNameVi")) +
-    th(t("thDob"), t("thDobVi")) + th(t("thAd"), t("thAdVi")) + `</tr></thead><tbody>`;
+    th("Representative Code","Mã Đại Diện") + th("Guest Name","Họ &amp; Tên Khách Hàng") +
+    th("Date of Birth","Ngày tháng năm sinh") + th("Arrival Date/ Time","Ngày / Giờ đến") + `</tr></thead><tbody>`;
   guests.forEach(g => {
     h += `<tr>${td(esc(code))}${td(esc(g.name))}${td(g.dob)}${td(g.ad + (g.at ? `<br>${g.at}` : ""))}</tr>`;
   });
@@ -709,7 +697,7 @@ let dl = null;
 
 function tablePNG(code, guests){
   const S = 2, cols = [170, 220, 170, 190], W = cols.reduce((a,b) => a + b, 0);
-  const heads = [[t("thCode"),t("thCodeVi")],[t("thName"),t("thNameVi")],[t("thDob"),t("thDobVi")],[t("thAd"),t("thAdVi")]];
+  const heads = [["Representative Code","Mã Đại Diện"],["Guest Name","Họ & Tên Khách Hàng"],["Date of Birth","Ngày tháng năm sinh"],["Arrival Date/ Time","Ngày / Giờ đến"]];
   const hasTime = guests.some(g => g.at), headH = 58, rowH = hasTime ? 54 : 38;
   const c = document.createElement("canvas");
   c.width = W * S; c.height = (headH + rowH * guests.length) * S;
