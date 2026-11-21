@@ -1,17 +1,42 @@
 # Arrival Email Generator
 
+*Known as the **agent project**.*
+
 Web tool for travel agents to prepare the new-member arrival email for The Grand Ho Tram.
 
 - Fill in guest name, date of birth and arrival date/time (multiple guests supported)
+- Guests arriving together share one group, so the arrival date and time are entered once
+- Chinese, English and Vietnamese, switchable in the top right corner
 - Preview the table, then send (opens the default mail app, table copied to clipboard)
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.08
+Current version: v1.10
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.10
+
+- **Three languages.** Chinese (default), English and Vietnamese, with a
+  switch in the top right corner. The choice is remembered in the browser.
+- The whole interface is translated: labels, buttons, notes, group numbers,
+  the day/month/year units and every validation message.
+- **The generated email follows the language too**: the greeting, the subject
+  wording and the table headers. The guest details the user types are not
+  translated.
+- The table header shows the second language on a second line only when it
+  differs, so the Vietnamese version does not repeat the same words twice.
+
+### v1.09
+
+- The project is referred to as the **agent project** from now on.
+
+### v1.08
+
+- Name capitalisation simplified: guest names are typed in pinyin, so plain
+  upper casing is enough.
 
 ### v1.07
 
@@ -58,7 +83,6 @@ Single static file (`index.html`), no build step. Host with GitHub Pages.
   boxes are now used for the date of birth only; the arrival date uses the
   browser's calendar control again.
 - The arrival date picker is limited to today through one year from now.
-- The table still shows both dates as dd/mm/yyyy.
 
 ### v1.02
 
@@ -75,7 +99,6 @@ Single static file (`index.html`), no build step. Host with GitHub Pages.
   new tab (in-app browsers and mobile Chrome silently discarded it). Browsers
   without mailto: support (WeChat, DingTalk, QQ, Android without a mail app)
   now get a manual send panel with the text selected and a copy button.
-- Arrival dates use the same component inputs.
 
 ### v1.01
 
