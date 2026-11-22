@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.14</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.15</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -591,6 +591,14 @@ addGroup();
 applyI18n();
 // Find a reachable reporting host early, so the first click is not lost.
 setTimeout(pickStatsApi, 1500);
+
+// Record the page visit once per browser session.
+try {
+  if (!sessionStorage.getItem("aeg_visited")){
+    sessionStorage.setItem("aeg_visited", "1");
+    setTimeout(() => reportUsage("visit", 0, 0), 2000);
+  }
+} catch (e) { /* storage may be blocked */ }
 $("add").onclick = () => {
   const prev = rows.lastElementChild;
   const shared = prev ? { ad: prev.querySelector(".ad").value, at: prev.querySelector(".at").value } : null;
