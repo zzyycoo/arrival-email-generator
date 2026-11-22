@@ -11,11 +11,22 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.14
+Current version: v1.15
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.15
+
+- **Page visits are counted.** A visit is recorded once per browser session,
+  separately from the generate and send actions.
+- **The dashboard shows the total visit count** and the number of devices that
+  have visited.
+- **Week and month summaries** are shown as cards, with the start date, the
+  action count, the people count, the device count and the number of devices
+  that actually sent an email.
+- Weekly and monthly history tables were added next to the daily trend.
 
 ### v1.14
 
