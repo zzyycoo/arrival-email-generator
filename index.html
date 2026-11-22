@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.13</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.14</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -497,7 +497,27 @@ function invalidate(){ $("send").disabled = true; }
 
 // ---- Usage reporting ----------------------------------------------------
 // Fire-and-forget: a failed call must never disturb the tool.
-const STATS_API = "https://aeg-stats.xu1760.workers.dev/api/log";
+// The reporting endpoint. The custom domain is tried first because the
+// workers.dev address is subject to DNS blocking in some regions.
+const STATS_CANDIDATES = [
+  "https://stats.godpleaseplease.online/api/log",
+  "https://aeg-stats.xu1760.workers.dev/api/log",
+];
+let STATS_API = STATS_CANDIDATES[0];
+let STATS_PROBED = false;
+
+// Work out which host actually answers, then keep using it.
+async function pickStatsApi(){
+  if (STATS_PROBED) return STATS_API;
+  for (const base of STATS_CANDIDATES){
+    try {
+      const res = await fetch(base.replace("/api/log", "/api/health"), { method: "GET", cache: "no-store" });
+      if (res.ok){ STATS_API = base; STATS_PROBED = true; return base; }
+    } catch (e) { /* try the next one */ }
+  }
+  STATS_PROBED = true;
+  return STATS_API;
+}
 
 // A short random id kept in this browser, so the same person on the same
 // device is counted once.
@@ -528,6 +548,9 @@ function deviceModel(){
 }
 
 function reportUsage(event, guests, groups){
+  // Probe once in the background; the first reports may still use the
+  // default address, which is fine.
+  if (!STATS_PROBED) pickStatsApi();
   try {
     const payload = {
       event,
@@ -566,6 +589,8 @@ function reportUsage(event, guests, groups){
 
 addGroup();
 applyI18n();
+// Find a reachable reporting host early, so the first click is not lost.
+setTimeout(pickStatsApi, 1500);
 $("add").onclick = () => {
   const prev = rows.lastElementChild;
   const shared = prev ? { ad: prev.querySelector(".ad").value, at: prev.querySelector(".at").value } : null;
