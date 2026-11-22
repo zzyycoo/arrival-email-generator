@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Usage Stats · Agent Project</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#fff; --line:#e3e6ea; --ink:#1b1f24; --muted:#6b7480;
+    --accent:#2f6feb; --warn:#c0392b; --ok:#1e8e5a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .card h2{font-size:15px;margin:0 0 14px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .lock{max-width:340px;margin:80px auto;text-align:center}
+  .lock input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;margin:14px 0 10px}
+  button{cursor:pointer;font:inherit;padding:11px 18px;border-radius:8px;border:1px solid var(--line);background:#fff}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:disabled{opacity:.5;cursor:not-allowed}
+  .err{color:var(--warn);font-size:13px;min-height:18px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi b{display:block;font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
+  .kpi span{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:60px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .trend{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px}
+  .trend .d{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+  .trend .d i{width:100%;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px;display:block}
+  .trend .d small{color:var(--muted);font-size:9px;white-space:nowrap;transform:rotate(-45deg);transform-origin:center}
+  .lang{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+  .lang.zh{background:#e8f0fe;color:#2f6feb}
+  .lang.en{background:#e6f4ea;color:#1e8e5a}
+  .lang.vi{background:#fdf0e3;color:#b26a00}
+  .muted{color:var(--muted)}
+  code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:12px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.cols{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div id="lock" class="lock card">
+  <h1>Usage Stats</h1>
+  <p class="sub">Agent Project · Arrival Email Generator</p>
+  <input id="pw" type="password" placeholder="管理员密码 / Admin password" autocomplete="current-password">
+  <div><button class="primary" id="go">查看统计</button></div>
+  <div class="err" id="lockErr"></div>
+</div>
+
+<div id="dash" class="hide">
+  <h1>Usage Stats</h1>
+  <p class="sub">Agent Project · Arrival Email Generator · <span id="genAt"></span></p>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="card">
+    <h2>每日趋势 · Last 30 days</h2>
+    <div class="trend" id="trend"></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>界面语言 · Interface language</h2>
+      <table id="langTbl"><thead><tr><th>语言</th><th class="num">次数</th><th class="num">人次</th><th class="num">设备</th><th>占比</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>事件 · Events</h2>
+      <table id="evtTbl"><thead><tr><th>事件</th><th class="num">次数</th><th class="num">人次</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>设备 · Devices（设备型号 + 编码）</h2>
+    <table id="devTbl"><thead><tr><th>设备</th><th>语言</th><th>代表码</th><th class="num">次数</th><th class="num">人次</th><th>最后使用</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>代表码 · Representative codes</h2>
+    <table id="codeTbl"><thead><tr><th>代表码</th><th class="num">次数</th><th class="num">人次</th><th class="num">设备数</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <h2>最近记录 · Recent</h2>
+    <table id="recTbl"><thead><tr><th>时间</th><th>事件</th><th>设备</th><th>语言</th><th>代表码</th><th class="num">客人</th><th class="num">组</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <p><button id="refresh">刷新</button> <button id="logout" class="muted">退出</button></p>
+</div>
+
+</div>
+<script>
+const $ = id => document.getElementById(id);
+// The API can live on either address. Try the custom domain first, fall
+// back to the workers.dev address, so the dashboard opens either way.
+const API_CANDIDATES = [
+  "https://stats.godpleaseplease.online",
+  "https://aeg-stats.xu1760.workers.dev",
+];
+let API = API_CANDIDATES[0];
+
+async function pickApi(){
+  for (const base of API_CANDIDATES){
+    try {
+      const res = await fetch(base + "/api/health", { method: "GET", cache: "no-store" });
+      if (res.ok){ API = base; return base; }
+    } catch (e) { /* try the next one */ }
+  }
+  return null;
+}
+let PW = "";
+
+const LANG_NAME = { zh: "中文", en: "English", vi: "Tiếng Việt" };
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+function fmtTime(iso){
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleString("zh-CN", { month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+}
+
+async function load(){
+  if (!API_CANDIDATES.includes(API)) API = API_CANDIDATES[0];
+  const res = await fetch(API + "/api/stats", { headers: { "X-Admin-Password": PW } });
+  if (res.status === 401){
+    $("lock").classList.remove("hide");
+    $("dash").classList.add("hide");
+    $("lockErr").textContent = "密码错误 / Wrong password";
+    return;
+  }
+  const data = await res.json();
+  if (!data.ok){ $("lockErr").textContent = data.error || "读取失败"; return; }
+  $("lock").classList.add("hide");
+  $("dash").classList.remove("hide");
+  render(data);
+}
+
+function render(d){
+  const t = d.totals;
+  $("genAt").textContent = "更新于 " + new Date(d.generated_at).toLocaleString("zh-CN");
+
+  $("kpis").innerHTML = [
+    ["总操作次数", t.actions],
+    ["总人次", t.people],
+    ["活跃设备", t.devices],
+    ["代表码数", t.codes],
+    ["今天次数", t.today_actions],
+    ["今天人次", t.today_people],
+    ["今天设备", t.today_devices],
+  ].map(([k,v]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+
+  // trend
+  const daily = d.daily || [];
+  const max = Math.max(1, ...daily.map(x => x.n));
+  $("trend").innerHTML = daily.length
+    ? daily.map(x => {
+        const h = Math.max(2, Math.round(x.n / max * 100));
+        const label = x.day.slice(5);
+        return `<div class="d" title="${x.day}: ${x.n} 次 / ${x.people} 人次 / ${x.devices} 设备">
+                  <i style="height:${h}%"></i><small>${label}</small></div>`;
+      }).join("")
+    : `<p class="muted">暂无数据</p>`;
+
+  // languages
+  const langs = d.by_lang || [];
+  const totalLang = langs.reduce((a,b) => a + b.n, 0) || 1;
+  $("langTbl").querySelector("tbody").innerHTML = langs.length ? langs.map(l => {
+    const pct = Math.round(l.n / totalLang * 100);
+    return `<tr>
+      <td><span class="lang ${esc(l.lang)}">${esc(LANG_NAME[l.lang] || l.lang)}</span></td>
+      <td class="num">${l.n}</td><td class="num">${l.people}</td><td class="num">${l.devices}</td>
+      <td><div class="bar"><i style="width:${pct}%"></i></div><span class="muted">${pct}%</span></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
+
+  // events
+  const EV = { generate: "生成预览", send: "发送邮件" };
+  const evts = d.by_event || [];
+  $("evtTbl").querySelector("tbody").innerHTML = evts.length ? evts.map(e =>
+    `<tr><td>${EV[e.event] || esc(e.event)}</td><td class="num">${e.n}</td><td class="num">${e.people}</td></tr>`
+  ).join("") : `<tr><td colspan="3" class="muted">暂无数据</td></tr>`;
+
+  // devices
+  $("devTbl").querySelector("tbody").innerHTML = (d.by_device || []).length
+    ? d.by_device.map(v => {
+        const langs = (v.langs || "").split(",").filter(Boolean);
+        return `<tr>
+          <td><code>${esc(v.device)}</code></td>
+          <td>${langs.map(l => `<span class="lang ${esc(l)}">${esc(LANG_NAME[l] || l)}</span>`).join(" ")}</td>
+          <td class="muted">${esc(v.codes || "—")}</td>
+          <td class="num">${v.n}</td><td class="num">${v.people}</td>
+          <td class="muted">${fmtTime(v.last_seen)}</td>
+        </tr>`;
+      }).join("")
+    : `<tr><td colspan="6" class="muted">暂无数据</td></tr>`;
+
+  // codes
+  $("codeTbl").querySelector("tbody").innerHTML = (d.by_code || []).length
+    ? d.by_code.map(c => `<tr><td><code>${esc(c.code)}</code></td><td class="num">${c.n}</td><td class="num">${c.people}</td><td class="num">${c.devices}</td></tr>`).join("")
+    : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
+
+  // recent
+  const EV2 = { generate: "生成", send: "发送" };
+  $("recTbl").querySelector("tbody").innerHTML = (d.recent || []).length
+    ? d.recent.map(r => `<tr>
+        <td class="muted">${fmtTime(r.ts)}</td>
+        <td>${EV2[r.event] || esc(r.event)}</td>
+        <td><code>${esc(r.device)}</code></td>
+        <td><span class="lang ${esc(r.lang)}">${esc(LANG_NAME[r.lang] || r.lang)}</span></td>
+        <td class="muted">${esc(r.code || "—")}</td>
+        <td class="num">${r.guests}</td><td class="num">${r.groups}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="7" class="muted">暂无数据</td></tr>`;
+}
+
+$("go").onclick = async () => {
+  PW = $("pw").value;
+  $("lockErr").textContent = "连接中…";
+  const base = await pickApi();
+  if (!base){
+    $("lockErr").textContent = "无法连接到统计服务 / Cannot reach the statistics service";
+    return;
+  }
+  $("lockErr").textContent = "";
+  await load();
+};
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+$("refresh").onclick = load;
+$("logout").onclick = () => { PW = ""; $("dash").classList.add("hide"); $("lock").classList.remove("hide"); $("pw").value = ""; };
+
+const saved = sessionStorage.getItem("aeg_admin_pw");
+if (saved){ PW = saved; pickApi().then(load); }
+</script>
+</body>
+</html>
