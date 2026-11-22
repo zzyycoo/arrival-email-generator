@@ -43,6 +43,7 @@
   .lang.en{background:#e6f4ea;color:#1e8e5a}
   .lang.vi{background:#fdf0e3;color:#b26a00}
   .muted{color:var(--muted)}
+  .sub2{color:var(--muted);font-size:11px;margin-top:4px;line-height:1.5}
   code{background:#f1f3f5;padding:1px 5px;border-radius:4px;font-size:12px}
   .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
   @media(max-width:760px){.cols{grid-template-columns:1fr}}
@@ -65,9 +66,22 @@
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="kpis" id="periods" style="margin-top:12px"></div>
+
   <div class="card">
     <h2>每日趋势 · Last 30 days</h2>
     <div class="trend" id="trend"></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>按周汇总 · Weekly</h2>
+      <table id="wkTbl"><thead><tr><th>周</th><th class="num">次数</th><th class="num">人次</th><th class="num">设备</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>按月汇总 · Monthly</h2>
+      <table id="moTbl"><thead><tr><th>月</th><th class="num">次数</th><th class="num">人次</th><th class="num">设备</th></tr></thead><tbody></tbody></table>
+    </div>
   </div>
 
   <div class="cols">
@@ -102,23 +116,7 @@
 </div>
 <script>
 const $ = id => document.getElementById(id);
-// The API can live on either address. Try the custom domain first, fall
-// back to the workers.dev address, so the dashboard opens either way.
-const API_CANDIDATES = [
-  "https://stats.godpleaseplease.online",
-  "https://aeg-stats.xu1760.workers.dev",
-];
-let API = API_CANDIDATES[0];
-
-async function pickApi(){
-  for (const base of API_CANDIDATES){
-    try {
-      const res = await fetch(base + "/api/health", { method: "GET", cache: "no-store" });
-      if (res.ok){ API = base; return base; }
-    } catch (e) { /* try the next one */ }
-  }
-  return null;
-}
+const API = "https://aeg-stats.xu1760.workers.dev";
 let PW = "";
 
 const LANG_NAME = { zh: "中文", en: "English", vi: "Tiếng Việt" };
@@ -133,7 +131,6 @@ function fmtTime(iso){
 }
 
 async function load(){
-  if (!API_CANDIDATES.includes(API)) API = API_CANDIDATES[0];
   const res = await fetch(API + "/api/stats", { headers: { "X-Admin-Password": PW } });
   if (res.status === 401){
     $("lock").classList.remove("hide");
@@ -152,7 +149,10 @@ function render(d){
   const t = d.totals;
   $("genAt").textContent = "更新于 " + new Date(d.generated_at).toLocaleString("zh-CN");
 
+  const w = d.this_week || {}, m = d.this_month || {};
   $("kpis").innerHTML = [
+    ["总访问次数", t.visits],
+    ["访问设备数", t.visit_devices],
     ["总操作次数", t.actions],
     ["总人次", t.people],
     ["活跃设备", t.devices],
@@ -161,6 +161,18 @@ function render(d){
     ["今天人次", t.today_people],
     ["今天设备", t.today_devices],
   ].map(([k,v]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+
+  // Week and month summary.
+  const periodBox = (title, start, p) => `
+    <div class="kpi" style="grid-column:span 1">
+      <b>${p.actions || 0}</b>
+      <span>${title}操作次数</span>
+      <div class="sub2">${start ? start + " 起" : ""}</div>
+      <div class="sub2">人次 ${p.people || 0} · 设备 ${p.devices || 0} · 发送 ${p.senders || 0}</div>
+    </div>`;
+  $("periods").innerHTML =
+      periodBox("本周", w.start, w) +
+      periodBox("本月", m.start, m);
 
   // trend
   const daily = d.daily || [];
@@ -186,8 +198,14 @@ function render(d){
     </tr>`;
   }).join("") : `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
 
+  // weekly and monthly tables
+  const wkRows = (d.weekly || []).map(w => `<tr><td>${esc(w.week)}</td><td class="num">${w.n}</td><td class="num">${w.people}</td><td class="num">${w.devices}</td></tr>`);
+  $("wkTbl").querySelector("tbody").innerHTML = wkRows.length ? wkRows.join("") : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
+  const moRows = (d.monthly || []).map(m => `<tr><td>${esc(m.month)}</td><td class="num">${m.n}</td><td class="num">${m.people}</td><td class="num">${m.devices}</td></tr>`);
+  $("moTbl").querySelector("tbody").innerHTML = moRows.length ? moRows.join("") : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
+
   // events
-  const EV = { generate: "生成预览", send: "发送邮件" };
+  const EV = { generate: "生成预览", send: "发送邮件", visit: "访问页面" };
   const evts = d.by_event || [];
   $("evtTbl").querySelector("tbody").innerHTML = evts.length ? evts.map(e =>
     `<tr><td>${EV[e.event] || esc(e.event)}</td><td class="num">${e.n}</td><td class="num">${e.people}</td></tr>`
@@ -228,12 +246,6 @@ function render(d){
 
 $("go").onclick = async () => {
   PW = $("pw").value;
-  $("lockErr").textContent = "连接中…";
-  const base = await pickApi();
-  if (!base){
-    $("lockErr").textContent = "无法连接到统计服务 / Cannot reach the statistics service";
-    return;
-  }
   $("lockErr").textContent = "";
   await load();
 };
@@ -242,7 +254,7 @@ $("refresh").onclick = load;
 $("logout").onclick = () => { PW = ""; $("dash").classList.add("hide"); $("lock").classList.remove("hide"); $("pw").value = ""; };
 
 const saved = sessionStorage.getItem("aeg_admin_pw");
-if (saved){ PW = saved; pickApi().then(load); }
+if (saved){ PW = saved; load(); }
 </script>
 </body>
 </html>
