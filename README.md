@@ -11,11 +11,33 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.12
+Current version: v1.14
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.14
+
+- **Usage statistics.** Every preview and every send is reported to a small
+  Cloudflare Worker backed by a D1 database. The record holds the device
+  model plus a short random id kept in the browser, the interface language,
+  the representative code, and the number of guests and groups. Reporting is
+  fire-and-forget and never affects the tool.
+- **The dashboard is a separate page**, `stats.html`. It asks for the admin
+  password and then shows the totals, a 30 day trend, the split by interface
+  language, the split by event, a row per device and the recent log.
+- The reporting host is probed at load time, so the page keeps working if one
+  of the two addresses is unreachable.
+
+### v1.13
+
+- The usage report is sent as a simple request, so no CORS preflight is
+  needed and the report is not dropped by networks that block preflights.
+
+### v1.12
+
+- The reporting endpoint and the statistics dashboard were first added.
 
 ### v1.11
 
