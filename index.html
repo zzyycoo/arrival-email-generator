@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.11</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.12</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -494,6 +494,65 @@ function bindNameInput(input){
 }
 
 function invalidate(){ $("send").disabled = true; }
+
+// ---- Usage reporting ----------------------------------------------------
+// Fire-and-forget: a failed call must never disturb the tool.
+const STATS_API = "https://aeg-stats.xu1760.workers.dev/api/log";
+
+// A short random id kept in this browser, so the same person on the same
+// device is counted once.
+function deviceId(){
+  const KEY = "aeg_device_id";
+  let id = null;
+  try { id = localStorage.getItem(KEY); } catch (e) {}
+  if (!id){
+    const rand = (typeof crypto !== "undefined" && crypto.randomUUID)
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 6)
+      : Math.random().toString(36).slice(2, 8);
+    id = rand;
+    try { localStorage.setItem(KEY, id); } catch (e) {}
+  }
+  return id;
+}
+
+// A readable device model: "iPhone", "Android", "Windows"...
+function deviceModel(){
+  const ua = navigator.userAgent || "";
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Android/i.test(ua)) return "Android";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "Mac";
+  if (/Windows/i.test(ua)) return "Windows";
+  if (/Linux/i.test(ua)) return "Linux";
+  return "Device";
+}
+
+function reportUsage(event, guests, groups){
+  try {
+    const payload = {
+      event,
+      device: `${deviceModel()}-${deviceId()}`,
+      lang: LANG,
+      code: ($("rc") && $("rc").value.trim()) || "",
+      guests: guests || 0,
+      groups: groups || 0,
+      agent: navigator.userAgent || "",
+    };
+    if (navigator.sendBeacon){
+      navigator.sendBeacon(STATS_API, new Blob([JSON.stringify(payload)], { type: "application/json" }));
+    } else {
+      fetch(STATS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      }).catch(() => {});
+    }
+  } catch (e) {
+    // Reporting is optional; never let it break the tool.
+  }
+}
+
 addGroup();
 applyI18n();
 $("add").onclick = () => {
@@ -670,6 +729,7 @@ $("gen").onclick = () => {
   const subject = `${code}${firstName ? " " + firstName : ""} ${t("subjNewMember")} ${shortDates.join(", ")}`;
   const html = buildTable(code, guests);
   current = { code, guests, subject, html, text: buildBody() };
+  reportUsage("generate", guests.length, new Set(guests.map(g => g.adShort)).size);
   $("to").textContent = TO;
   $("subj").textContent = subject;
   $("paper").innerHTML = html;
@@ -792,6 +852,7 @@ $("send").onclick = async () => {
   const btn = $("send");
   btn.disabled = true;
   let copied = false;
+  reportUsage("send", current.guests.length, new Set(current.guests.map(g => g.adShort)).size);
   try {
     const blobH = new Blob([current.html], { type: "text/html" });
     const blobT = new Blob([buildTableText(current.guests)], { type: "text/plain" });
