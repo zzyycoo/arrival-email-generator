@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.12</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.13</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -538,13 +538,24 @@ function reportUsage(event, guests, groups){
       groups: groups || 0,
       agent: navigator.userAgent || "",
     };
+    const body = JSON.stringify(payload);
     if (navigator.sendBeacon){
-      navigator.sendBeacon(STATS_API, new Blob([JSON.stringify(payload)], { type: "application/json" }));
+      // sendBeacon with a JSON blob would trigger a CORS preflight, which
+      // some networks drop. A text/plain body is a simple request instead.
+      const ok = navigator.sendBeacon(STATS_API, body);
+      if (!ok){
+        fetch(STATS_API, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=UTF-8" },
+          body,
+          keepalive: true,
+        }).catch(() => {});
+      }
     } else {
       fetch(STATS_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body,
         keepalive: true,
       }).catch(() => {});
     }
