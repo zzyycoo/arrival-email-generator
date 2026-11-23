@@ -72,7 +72,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.15</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.16</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -497,10 +497,10 @@ function invalidate(){ $("send").disabled = true; }
 
 // ---- Usage reporting ----------------------------------------------------
 // Fire-and-forget: a failed call must never disturb the tool.
-// The reporting endpoint. The custom domain is tried first because the
-// workers.dev address is subject to DNS blocking in some regions.
+// The reporting endpoint. Only addresses that actually resolve are listed:
+// a beacon sent to a dead host is dropped silently, so a broken entry here
+// would swallow every report.
 const STATS_CANDIDATES = [
-  "https://stats.godpleaseplease.online/api/log",
   "https://aeg-stats.xu1760.workers.dev/api/log",
 ];
 let STATS_API = STATS_CANDIDATES[0];
@@ -562,26 +562,20 @@ function reportUsage(event, guests, groups){
       agent: navigator.userAgent || "",
     };
     const body = JSON.stringify(payload);
+    // sendBeacon with a JSON blob would trigger a CORS preflight, which
+    // some networks drop. A text/plain body is a simple request instead.
+    // A beacon can also report success for a host that never receives the
+    // request, so a plain fetch follows it as a safety net.
+    let sent = false;
     if (navigator.sendBeacon){
-      // sendBeacon with a JSON blob would trigger a CORS preflight, which
-      // some networks drop. A text/plain body is a simple request instead.
-      const ok = navigator.sendBeacon(STATS_API, body);
-      if (!ok){
-        fetch(STATS_API, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=UTF-8" },
-          body,
-          keepalive: true,
-        }).catch(() => {});
-      }
-    } else {
-      fetch(STATS_API, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
+      try { sent = navigator.sendBeacon(STATS_API, body); } catch (e) { sent = false; }
     }
+    fetch(STATS_API, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      body,
+      keepalive: true,
+    }).catch(() => {});
   } catch (e) {
     // Reporting is optional; never let it break the tool.
   }
