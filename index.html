@@ -579,10 +579,8 @@ function reportUsage(event, guests, groups){
       agent: navigator.userAgent || "",
     };
     const body = JSON.stringify(payload);
-    // sendBeacon with a JSON blob would trigger a CORS preflight, which
-    // some networks drop. A text/plain body is a simple request instead.
-    // A beacon can also report success for a host that never receives the
-    // request, so a plain fetch follows it as a safety net.
+    // The payload is sent as text/plain so the request needs no CORS
+    // preflight, which some networks drop.
     // Try every candidate. One of them will answer even if the other is
     // blocked, and the first success decides the status shown to the user.
     // Only one request per address, so an action is never counted twice.
