@@ -11,11 +11,18 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.17
+Current version: v1.18
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.18
+
+- **Reports now go to every known address at once**, so one blocked host
+  cannot swallow the statistics.
+- **A "诊断" button in the footer** checks which reporting address answers
+  and shows the result and the response time for each one.
 
 ### v1.17
 
