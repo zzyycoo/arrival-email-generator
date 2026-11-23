@@ -67,6 +67,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .rs{font-size:11px;color:#888}
 .rs.ok{color:#1e8e5a}
 .rs.bad{color:#c0392b}
+.diagbtn{margin-left:12px;font-size:11px;padding:2px 9px;border:1px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;color:#666}
+.diagbtn:hover{background:#f2f2f2}
+.diagout{white-space:pre-line}
 </style>
 </head>
 <body>
@@ -76,7 +79,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.17</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.18</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -132,6 +135,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </main>
 <footer class="foot">
   <span id="reportStatus" class="rs"></span>
+  <button type="button" id="diagBtn" class="diagbtn" title="检查统计上报是否可达">诊断</button>
+  <span id="diagOut" class="rs"></span>
 </footer>
 
 <script>
@@ -508,6 +513,7 @@ function invalidate(){ $("send").disabled = true; }
 // a beacon sent to a dead host is dropped silently, so a broken entry here
 // would swallow every report.
 const STATS_CANDIDATES = [
+  "https://stats.godpleaseplease.online/api/log",
   "https://aeg-stats.xu1760.workers.dev/api/log",
 ];
 let STATS_API = STATS_CANDIDATES[0];
@@ -577,27 +583,56 @@ function reportUsage(event, guests, groups){
     // some networks drop. A text/plain body is a simple request instead.
     // A beacon can also report success for a host that never receives the
     // request, so a plain fetch follows it as a safety net.
-    let sent = false;
-    if (navigator.sendBeacon){
-      try { sent = navigator.sendBeacon(STATS_API, body); } catch (e) { sent = false; }
-    }
-    fetch(STATS_API, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=UTF-8" },
-      body,
-      keepalive: true,
-    }).then(res => {
-      lastReport = { at: Date.now(), ok: res.ok, detail: res.status + " " + STATS_API };
-      renderReportStatus();
-    }).catch(err => {
-      lastReport = { at: Date.now(), ok: false, detail: String(err && err.message ? err.message : err) };
-      renderReportStatus();
+    // Send to every candidate. One of them will answer even if the other
+    // is blocked, and the first success decides the status shown to the user.
+    let anyOk = false;
+    const tries = STATS_CANDIDATES.map(base => {
+      if (navigator.sendBeacon){
+        try { navigator.sendBeacon(base, body); } catch (e) { /* ignore */ }
+      }
+      return fetch(base, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body,
+        keepalive: true,
+      }).then(res => {
+        if (res.ok){
+          anyOk = true;
+          lastReport = { at: Date.now(), ok: true, detail: "ok" };
+          renderReportStatus();
+        }
+        return res.ok;
+      }).catch(() => false);
+    });
+    Promise.all(tries).then(results => {
+      if (!anyOk){
+        lastReport = { at: Date.now(), ok: false, detail: "所有地址均不可达" };
+        renderReportStatus();
+      }
     });
   } catch (e) {
     // Reporting is optional; never let it break the tool.
     lastReport = { at: Date.now(), ok: false, detail: String(e && e.message ? e.message : e) };
     renderReportStatus();
   }
+}
+
+// Check which reporting address answers, so a blocked one is easy to spot.
+async function runDiagnostics(){
+  const out = document.getElementById("diagOut");
+  out.textContent = "检测中…";
+  const lines = [];
+  for (const base of STATS_CANDIDATES){
+    const url = base.replace("/api/log", "/api/health");
+    const t0 = Date.now();
+    try {
+      const res = await fetch(url, { method: "GET", cache: "no-store" });
+      lines.push((res.ok ? "✓" : "✗") + " " + url + " → HTTP " + res.status + " (" + (Date.now() - t0) + "ms)");
+    } catch (e){
+      lines.push("✗ " + url + " → " + (e && e.message ? e.message : String(e)));
+    }
+  }
+  out.textContent = lines.join("\n");
 }
 
 // A small note in the footer, so a broken report is visible rather than silent.
@@ -618,6 +653,11 @@ addGroup();
 applyI18n();
 // Find a reachable reporting host early, so the first click is not lost.
 setTimeout(pickStatsApi, 1500);
+
+// Diagnostics button.
+if (document.getElementById("diagBtn")){
+  document.getElementById("diagBtn").onclick = runDiagnostics;
+}
 
 // Record the page visit once per browser session.
 try {
