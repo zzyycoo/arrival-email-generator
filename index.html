@@ -63,6 +63,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .note{font-size:13px;color:var(--muted);margin-top:10px}
 .hide{display:none}
 @media (max-width:700px){.guest{grid-template-columns:1fr 1fr}.guest>.n{grid-column:1/-1}.guest>.dt-wrap{grid-column:1/-1}.group>.shared{grid-template-columns:1fr 1fr}}
+.foot{max-width:1080px;margin:0 auto;padding:0 18px 26px}
+.rs{font-size:11px;color:#888}
+.rs.ok{color:#1e8e5a}
+.rs.bad{color:#c0392b}
 </style>
 </head>
 <body>
@@ -72,7 +76,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.16</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.17</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -126,6 +130,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </section>
 </div>
 </main>
+<footer class="foot">
+  <span id="reportStatus" class="rs"></span>
+</footer>
 
 <script>
 const TO = "grp.arrival@thegrandhotram.com";
@@ -547,6 +554,10 @@ function deviceModel(){
   return "Device";
 }
 
+// Keeps the outcome of the last report so the page can show whether the
+// statistics are reaching the server.
+let lastReport = { at: 0, ok: false, detail: "" };
+
 function reportUsage(event, guests, groups){
   // Probe once in the background; the first reports may still use the
   // default address, which is fine.
@@ -575,9 +586,31 @@ function reportUsage(event, guests, groups){
       headers: { "Content-Type": "text/plain;charset=UTF-8" },
       body,
       keepalive: true,
-    }).catch(() => {});
+    }).then(res => {
+      lastReport = { at: Date.now(), ok: res.ok, detail: res.status + " " + STATS_API };
+      renderReportStatus();
+    }).catch(err => {
+      lastReport = { at: Date.now(), ok: false, detail: String(err && err.message ? err.message : err) };
+      renderReportStatus();
+    });
   } catch (e) {
     // Reporting is optional; never let it break the tool.
+    lastReport = { at: Date.now(), ok: false, detail: String(e && e.message ? e.message : e) };
+    renderReportStatus();
+  }
+}
+
+// A small note in the footer, so a broken report is visible rather than silent.
+function renderReportStatus(){
+  const el = document.getElementById("reportStatus");
+  if (!el) return;
+  if (!lastReport.at){ el.textContent = ""; el.className = ""; return; }
+  if (lastReport.ok){
+    el.textContent = "✓ 统计已上报";
+    el.className = "ok";
+  } else {
+    el.textContent = "⚠ 统计未送达 (" + lastReport.detail + ")";
+    el.className = "bad";
   }
 }
 
