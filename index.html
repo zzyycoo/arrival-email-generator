@@ -79,7 +79,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.18</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.19</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -583,14 +583,12 @@ function reportUsage(event, guests, groups){
     // some networks drop. A text/plain body is a simple request instead.
     // A beacon can also report success for a host that never receives the
     // request, so a plain fetch follows it as a safety net.
-    // Send to every candidate. One of them will answer even if the other
-    // is blocked, and the first success decides the status shown to the user.
+    // Try every candidate. One of them will answer even if the other is
+    // blocked, and the first success decides the status shown to the user.
+    // Only one request per address, so an action is never counted twice.
     let anyOk = false;
-    const tries = STATS_CANDIDATES.map(base => {
-      if (navigator.sendBeacon){
-        try { navigator.sendBeacon(base, body); } catch (e) { /* ignore */ }
-      }
-      return fetch(base, {
+    const tries = STATS_CANDIDATES.map(base =>
+      fetch(base, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=UTF-8" },
         body,
@@ -602,9 +600,9 @@ function reportUsage(event, guests, groups){
           renderReportStatus();
         }
         return res.ok;
-      }).catch(() => false);
-    });
-    Promise.all(tries).then(results => {
+      }).catch(() => false)
+    );
+    Promise.all(tries).then(() => {
       if (!anyOk){
         lastReport = { at: Date.now(), ok: false, detail: "所有地址均不可达" };
         renderReportStatus();
@@ -659,13 +657,12 @@ if (document.getElementById("diagBtn")){
   document.getElementById("diagBtn").onclick = runDiagnostics;
 }
 
-// Record the page visit once per browser session.
-try {
-  if (!sessionStorage.getItem("aeg_visited")){
-    sessionStorage.setItem("aeg_visited", "1");
-    setTimeout(() => reportUsage("visit", 0, 0), 2000);
-  }
-} catch (e) { /* storage may be blocked */ }
+// Record the page visit. The host is probed first, so the report goes to
+// an address that actually answers.
+setTimeout(() => {
+  if (!STATS_PROBED) pickStatsApi();
+  setTimeout(() => reportUsage("visit", 0, 0), 300);
+}, 2500);
 $("add").onclick = () => {
   const prev = rows.lastElementChild;
   const shared = prev ? { ad: prev.querySelector(".ad").value, at: prev.querySelector(".at").value } : null;
