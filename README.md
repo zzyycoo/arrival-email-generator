@@ -11,11 +11,19 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.18
+Current version: v1.19
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.19
+
+- **An action is no longer counted twice.** The report is sent with a plain
+  fetch only, and the server ignores a repeat of the same device, event and
+  guest count inside the same minute.
+- **Every page open is counted as a visit**, not just the first one in a
+  browser session.
 
 ### v1.18
 
