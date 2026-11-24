@@ -73,6 +73,15 @@
     <div class="trend" id="trend"></div>
   </div>
 
+  <div class="card">
+    <h2>交叉验证 · Cross check</h2>
+    <p class="muted" style="font-size:12px;margin:-4px 0 12px">
+      服务端独立计数（不依赖页面脚本）对比客户端上报。两者的差值就是客户端漏掉的部分。
+      Server side counting is independent of the page script; the gap is what the client side reporting missed.
+    </p>
+    <table id="xTbl"><thead><tr><th>指标</th><th class="num">客户端</th><th class="num">服务端</th><th class="num">差值</th><th>覆盖率</th></tr></thead><tbody></tbody></table>
+  </div>
+
   <div class="cols">
     <div class="card">
       <h2>按周汇总 · Weekly</h2>
@@ -92,6 +101,13 @@
     <div class="card">
       <h2>事件 · Events</h2>
       <table id="evtTbl"><thead><tr><th>事件</th><th class="num">次数</th><th class="num">人次</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <h2>国家/地区 · Countries（服务端）</h2>
+      <table id="ctTbl"><thead><tr><th>地区</th><th class="num">浏览次数</th></tr></thead><tbody></tbody></table>
     </div>
   </div>
 
@@ -140,16 +156,25 @@ async function load(){
   }
   const data = await res.json();
   if (!data.ok){ $("lockErr").textContent = data.error || "读取失败"; return; }
+  // The server side numbers are a separate request; the dashboard works
+  // even if that one fails.
+  let server = null;
+  try {
+    const sres = await fetch(API + "/api/server-stats", { headers: { "X-Admin-Password": PW } });
+    if (sres.ok) server = await sres.json();
+  } catch (e) { /* leave it null */ }
   $("lock").classList.add("hide");
   $("dash").classList.remove("hide");
-  render(data);
+  render(data, server);
 }
 
-function render(d){
-  const t = d.totals;
+function render(d, server){
+  d = d || {};
+  const t = d.totals || {};
   $("genAt").textContent = "更新于 " + new Date(d.generated_at).toLocaleString("zh-CN");
 
   const w = d.this_week || {}, m = d.this_month || {};
+  const safe = v => (typeof v === "number" && isFinite(v)) ? v : 0;
   $("kpis").innerHTML = [
     ["总访问次数", t.visits],
     ["访问设备数", t.visit_devices],
@@ -198,11 +223,49 @@ function render(d){
     </tr>`;
   }).join("") : `<tr><td colspan="5" class="muted">暂无数据</td></tr>`;
 
+  // Cross check: client side counts against the server side ones.
+  const xBody = $("xTbl").querySelector("tbody");
+  if (!server || !server.ok){
+    xBody.innerHTML = `<tr><td colspan="5" class="muted">服务端数据暂不可用</td></tr>`;
+  } else {
+    const st = server.totals;
+    const clientVisits = t.visits || 0;
+    const clientDevices = t.visit_devices || 0;
+    const rows = [
+      ["总访问次数 / Page views", clientVisits, safe(st.views)],
+      ["独立访客 / Visitors", clientDevices, safe(st.visitors)],
+      ["本周 / This week", safe(w.actions), safe((server.this_week || {}).views)],
+      ["本月 / This month", safe(m.actions), safe((server.this_month || {}).views)],
+    ];
+    xBody.innerHTML = rows.map(([label, c, s]) => {
+      const gap = s - c;
+      const cover = s > 0 ? Math.round(c / s * 100) : 0;
+      const color = s === 0 ? "var(--muted)" : cover >= 90 ? "var(--ok)" : cover >= 60 ? "#b26a00" : "var(--warn)";
+      return `<tr>
+        <td>${esc(label)}</td>
+        <td class="num">${c}</td>
+        <td class="num">${s}</td>
+        <td class="num" style="color:${gap > 0 ? "var(--warn)" : "var(--muted)"}">${gap > 0 ? "+" + gap : gap}</td>
+        <td><div class="bar"><i style="width:${Math.min(100, cover)}%;background:${color}"></i></div>
+            <span style="font-size:11px;color:${color}">${s > 0 ? cover + "%" : "—"}</span></td>
+      </tr>`;
+    }).join("");
+  }
+
   // weekly and monthly tables
   const wkRows = (d.weekly || []).map(w => `<tr><td>${esc(w.week)}</td><td class="num">${w.n}</td><td class="num">${w.people}</td><td class="num">${w.devices}</td></tr>`);
   $("wkTbl").querySelector("tbody").innerHTML = wkRows.length ? wkRows.join("") : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
   const moRows = (d.monthly || []).map(m => `<tr><td>${esc(m.month)}</td><td class="num">${m.n}</td><td class="num">${m.people}</td><td class="num">${m.devices}</td></tr>`);
   $("moTbl").querySelector("tbody").innerHTML = moRows.length ? moRows.join("") : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
+
+  // Countries, from the server side count.
+  if (server && server.ok && (server.by_country || []).length){
+    const ct = $("ctTbl");
+    if (ct){
+      const rows = server.by_country.map(c => `<tr><td>${esc(c.country || "—")}</td><td class="num">${c.n}</td></tr>`).join("");
+      ct.querySelector("tbody").innerHTML = rows;
+    }
+  }
 
   // events
   const EV = { generate: "生成预览", send: "发送邮件", visit: "访问页面" };
