@@ -11,11 +11,17 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.21
+Current version: v1.22
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.22
+
+- **The refresh button on the dashboard works now.** The request asks for a
+  fresh answer instead of reusing a cached one, the server sends a
+  no-store header, and the button shows that it is working while it runs.
 
 ### v1.21
 
