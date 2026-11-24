@@ -147,7 +147,13 @@ function fmtTime(iso){
 }
 
 async function load(){
-  const res = await fetch(API + "/api/stats", { headers: { "X-Admin-Password": PW } });
+  // Never let the browser reuse a cached answer, otherwise the refresh
+  // button appears to do nothing.
+  const bust = "?t=" + Date.now();
+  const res = await fetch(API + "/api/stats" + bust, {
+    headers: { "X-Admin-Password": PW },
+    cache: "no-store",
+  });
   if (res.status === 401){
     $("lock").classList.remove("hide");
     $("dash").classList.add("hide");
@@ -160,12 +166,16 @@ async function load(){
   // even if that one fails.
   let server = null;
   try {
-    const sres = await fetch(API + "/api/server-stats", { headers: { "X-Admin-Password": PW } });
+    const sres = await fetch(API + "/api/server-stats" + bust, {
+      headers: { "X-Admin-Password": PW },
+      cache: "no-store",
+    });
     if (sres.ok) server = await sres.json();
   } catch (e) { /* leave it null */ }
   $("lock").classList.add("hide");
   $("dash").classList.remove("hide");
   render(data, server);
+  return true;
 }
 
 function render(d, server){
@@ -313,7 +323,18 @@ $("go").onclick = async () => {
   await load();
 };
 $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
-$("refresh").onclick = load;
+$("refresh").onclick = async () => {
+  const btn = $("refresh");
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "刷新中…";
+  try {
+    await load();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+};
 $("logout").onclick = () => { PW = ""; $("dash").classList.add("hide"); $("lock").classList.remove("hide"); $("pw").value = ""; };
 
 const saved = sessionStorage.getItem("aeg_admin_pw");
