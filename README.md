@@ -11,11 +11,17 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.20
+Current version: v1.21
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.21
+
+- The "统计已上报" note and the "诊断" button were removed from the page.
+  The reporting itself is unchanged, and the dashboard still shows the cross
+  check between the client side and the server side counts.
 
 ### v1.20
 
