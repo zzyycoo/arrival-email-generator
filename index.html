@@ -79,7 +79,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.19</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.20</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -649,6 +649,34 @@ addGroup();
 applyI18n();
 // Find a reachable reporting host early, so the first click is not lost.
 setTimeout(pickStatsApi, 1500);
+
+// A second, independent report: a page view counted by the server. It is
+// separate from the usage report on purpose, so the two can be compared and
+// any gap in the usage report becomes visible.
+(function reportPageView(){
+  try {
+    const body = JSON.stringify({
+      path: location.pathname,
+      lang: LANG,
+      device: typeof deviceId === "function" ? deviceModel() + "-" + deviceId() : "",
+    });
+    const bases = [
+      "https://stats.godpleaseplease.online/api/view",
+      "https://aeg-stats.xu1760.workers.dev/api/view",
+    ];
+    bases.forEach(base => {
+      if (navigator.sendBeacon){
+        try { navigator.sendBeacon(base, body); } catch (e) { /* ignore */ }
+      }
+      fetch(base, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        body,
+        keepalive: true,
+      }).catch(() => {});
+    });
+  } catch (e) { /* ignore */ }
+})();
 
 // Diagnostics button.
 if (document.getElementById("diagBtn")){
