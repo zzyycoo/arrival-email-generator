@@ -63,12 +63,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .note{font-size:13px;color:var(--muted);margin-top:10px}
 .hide{display:none}
 @media (max-width:700px){.guest{grid-template-columns:1fr 1fr}.guest>.n{grid-column:1/-1}.guest>.dt-wrap{grid-column:1/-1}.group>.shared{grid-template-columns:1fr 1fr}}
-.foot{max-width:1080px;margin:0 auto;padding:0 18px 26px}
-.rs{font-size:11px;color:#888}
-.rs.ok{color:#1e8e5a}
-.rs.bad{color:#c0392b}
-.diagbtn{margin-left:12px;font-size:11px;padding:2px 9px;border:1px solid #ddd;border-radius:10px;background:#fff;cursor:pointer;color:#666}
-.diagbtn:hover{background:#f2f2f2}
 .diagout{white-space:pre-line}
 </style>
 </head>
@@ -79,7 +73,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.20</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.21</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -133,11 +127,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 </section>
 </div>
 </main>
-<footer class="foot">
-  <span id="reportStatus" class="rs"></span>
-  <button type="button" id="diagBtn" class="diagbtn" title="检查统计上报是否可达">诊断</button>
-  <span id="diagOut" class="rs"></span>
-</footer>
 
 <script>
 const TO = "grp.arrival@thegrandhotram.com";
@@ -560,10 +549,6 @@ function deviceModel(){
   return "Device";
 }
 
-// Keeps the outcome of the last report so the page can show whether the
-// statistics are reaching the server.
-let lastReport = { at: 0, ok: false, detail: "" };
-
 function reportUsage(event, guests, groups){
   // Probe once in the background; the first reports may still use the
   // default address, which is fine.
@@ -582,66 +567,18 @@ function reportUsage(event, guests, groups){
     // The payload is sent as text/plain so the request needs no CORS
     // preflight, which some networks drop.
     // Try every candidate. One of them will answer even if the other is
-    // blocked, and the first success decides the status shown to the user.
-    // Only one request per address, so an action is never counted twice.
-    let anyOk = false;
-    const tries = STATS_CANDIDATES.map(base =>
+    // blocked. Only one request per address, so an action is never counted
+    // twice.
+    STATS_CANDIDATES.forEach(base => {
       fetch(base, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=UTF-8" },
         body,
         keepalive: true,
-      }).then(res => {
-        if (res.ok){
-          anyOk = true;
-          lastReport = { at: Date.now(), ok: true, detail: "ok" };
-          renderReportStatus();
-        }
-        return res.ok;
-      }).catch(() => false)
-    );
-    Promise.all(tries).then(() => {
-      if (!anyOk){
-        lastReport = { at: Date.now(), ok: false, detail: "所有地址均不可达" };
-        renderReportStatus();
-      }
+      }).catch(() => {});
     });
   } catch (e) {
     // Reporting is optional; never let it break the tool.
-    lastReport = { at: Date.now(), ok: false, detail: String(e && e.message ? e.message : e) };
-    renderReportStatus();
-  }
-}
-
-// Check which reporting address answers, so a blocked one is easy to spot.
-async function runDiagnostics(){
-  const out = document.getElementById("diagOut");
-  out.textContent = "检测中…";
-  const lines = [];
-  for (const base of STATS_CANDIDATES){
-    const url = base.replace("/api/log", "/api/health");
-    const t0 = Date.now();
-    try {
-      const res = await fetch(url, { method: "GET", cache: "no-store" });
-      lines.push((res.ok ? "✓" : "✗") + " " + url + " → HTTP " + res.status + " (" + (Date.now() - t0) + "ms)");
-    } catch (e){
-      lines.push("✗ " + url + " → " + (e && e.message ? e.message : String(e)));
-    }
-  }
-  out.textContent = lines.join("\n");
-}
-
-// A small note in the footer, so a broken report is visible rather than silent.
-function renderReportStatus(){
-  const el = document.getElementById("reportStatus");
-  if (!el) return;
-  if (!lastReport.at){ el.textContent = ""; el.className = ""; return; }
-  if (lastReport.ok){
-    el.textContent = "✓ 统计已上报";
-    el.className = "ok";
-  } else {
-    el.textContent = "⚠ 统计未送达 (" + lastReport.detail + ")";
-    el.className = "bad";
   }
 }
 
@@ -677,11 +614,6 @@ setTimeout(pickStatsApi, 1500);
     });
   } catch (e) { /* ignore */ }
 })();
-
-// Diagnostics button.
-if (document.getElementById("diagBtn")){
-  document.getElementById("diagBtn").onclick = runDiagnostics;
-}
 
 // Record the page visit. The host is probed first, so the report goes to
 // an address that actually answers.
