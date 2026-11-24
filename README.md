@@ -11,11 +11,22 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.19
+Current version: v1.20
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.20
+
+- **A second, independent counter.** The page reports the view to a separate
+  endpoint that counts on the server, so the numbers do not depend on the
+  page script at all.
+- **The dashboard cross checks the two counts.** The client side figure and
+  the server side figure sit next to each other with the gap between them
+  and a coverage percentage. Any gap is usage the client side reporting
+  missed.
+- The server side count also gives the country and the referrer.
 
 ### v1.19
 
