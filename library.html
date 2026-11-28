@@ -132,7 +132,7 @@ Projects that can actually earn money. The curated ones were checked by hand; th
 
 <div class="card" id="adminCard" style="display:none">
   <h2 style="font-size:15px;color:var(--muted);margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em">管理 · Admin</h2>
-  <div class="lock" style="margin:0">
+  <div class="lock" id="lock" style="margin:0">
     <input type="password" id="pw" placeholder="管理密码 · Admin password">
     <button class="primary" id="go">进入</button>
     <p class="err" id="aErr"></p>
@@ -304,6 +304,7 @@ $("go").onclick = async () => {
     await loadList();
     $("lock").style.display = "none";
     $("adminBody").style.display = "block";
+    $("pw").value = "";
     $("aMsg").textContent = "已登录 · Signed in";
     loadAdmin();
   } catch (e){
