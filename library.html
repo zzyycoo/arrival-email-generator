@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 副业项目库 · AI Side Project Library</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#fff; --line:#e3e6ea; --ink:#1b1f24; --muted:#6b7480;
+    --accent:#2f6feb; --warn:#c0392b; --ok:#1e8e5a; --gold:#b26a00;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:1120px;margin:0 auto;padding:24px 16px 70px}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:22px;margin:0}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+
+  /* filters */
+  .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .filters input[type=search]{flex:1;min-width:200px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font:inherit}
+  select{padding:9px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+  .chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{padding:5px 12px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;font-size:13px;color:var(--muted)}
+  .chip:hover{background:#f0f2f5}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .chip .n{opacity:.7;margin-left:4px;font-variant-numeric:tabular-nums}
+
+  /* project cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .proj{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column}
+  .proj:hover{border-color:#c9d2de;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  .proj h3{margin:0 0 4px;font-size:16px;line-height:1.4}
+  .proj .zh{color:var(--muted);font-size:13px;margin-bottom:8px}
+  .proj p{margin:0 0 12px;font-size:13px;color:#4a5158;flex:1}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:10px;background:#eef1f5;color:var(--muted)}
+  .tag.cat{background:#e8f0fe;color:var(--accent)}
+  .tag.money{background:#e6f6ee;color:var(--ok);font-weight:600}
+  .tag.reg{background:#fdf1e0;color:var(--gold)}
+  .meta{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line)}
+  .meta b{color:var(--ink);font-weight:600}
+  .star{color:#d4a017}
+  .new-badge{font-size:11px;color:var(--accent);background:#e8f0fe;padding:2px 8px;border-radius:10px}
+
+  /* detail */
+  #detail{display:none}
+  #detail.on{display:block}
+  .detail-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .detail-head h2{margin:0;font-size:20px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:13px;margin:14px 0}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0}
+  .body-text{white-space:pre-wrap;font-size:14px;line-height:1.75;color:#33383d}
+  a{color:var(--accent)}
+  .empty{text-align:center;padding:50px 20px;color:var(--muted)}
+
+  /* pager */
+  .pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:22px}
+  .pager button{font-size:13px;padding:6px 14px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  .pager button:hover:not(:disabled){background:#f0f2f5}
+  .pager button:disabled{opacity:.4;cursor:default}
+  .pager span{font-size:12px;color:var(--muted)}
+
+  .note{font-size:12px;color:var(--muted);margin-top:10px}
+  .lock{max-width:340px;margin:60px auto;text-align:center}
+  .lock input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font:inherit;margin:14px 0 10px}
+  button{font:inherit;padding:10px 16px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .err{color:var(--warn);font-size:13px;min-height:18px}
+  .hide{display:none}
+  @media(max-width:640px){.kv{grid-template-columns:1fr}.kv dt{margin-top:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>AI 副业项目库</h1>
+  <span class="muted" style="font-size:13px">AI Side Project Library</span>
+</header>
+<p class="sub">能真正赚到钱的 AI 项目。精选项目经过人工核实，新条目由抓取器自动收集，等你筛选。<br>
+Projects that can actually earn money. The curated ones were checked by hand; the new ones come from the collector and wait for your review.</p>
+
+<div id="main">
+  <div class="filters">
+    <input type="search" id="q" placeholder="搜索项目、技能、工具…  search projects, skills, tools">
+    <select id="fRegion">
+      <option value="">全部地区 · All regions</option>
+      <option value="global">🌍 全球 Global</option>
+      <option value="vn">🇻🇳 越南 Vietnam</option>
+      <option value="sea">🌏 东南亚 SE Asia</option>
+      <option value="cn">🇨🇳 中国 China</option>
+    </select>
+    <select id="fEffort">
+      <option value="">全部投入 · All effort</option>
+      <option value="low">低投入 Low</option>
+      <option value="medium">中等 Medium</option>
+      <option value="high">高投入 High</option>
+    </select>
+  </div>
+
+  <div class="chips" id="cats"></div>
+
+  <div id="list"><div class="grid" id="grid"></div></div>
+
+  <div class="pager" id="pager" style="display:none">
+    <button id="prev">上一页</button>
+    <span id="pinfo"></span>
+    <button id="next">下一页</button>
+  </div>
+</div>
+
+<div id="detail">
+  <p><button id="back">← 返回列表</button></p>
+  <div class="card">
+    <div class="detail-head">
+      <h2 id="dTitle"></h2>
+      <span id="dStars" class="star"></span>
+    </div>
+    <div id="dZh" class="sub" style="margin-bottom:10px"></div>
+    <div class="tags" id="dTags"></div>
+    <dl class="kv" id="dKv"></dl>
+    <div class="body-text" id="dBody"></div>
+    <p id="dLink"></p>
+    <p id="dNotes" class="note"></p>
+  </div>
+</div>
+
+<div class="card" id="adminCard" style="display:none">
+  <h2 style="font-size:15px;color:var(--muted);margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em">管理 · Admin</h2>
+  <div class="lock" style="margin:0">
+    <input type="password" id="pw" placeholder="管理密码 · Admin password">
+    <button class="primary" id="go">进入</button>
+    <p class="err" id="aErr"></p>
+  </div>
+  <div id="adminBody" style="display:none">
+    <p><button id="collect">立即抓取 · Collect now</button> <button id="reloadSrc">刷新源状态</button></p>
+    <p class="err" id="aMsg"></p>
+
+    <h3 style="font-size:14px;color:var(--muted);margin:18px 0 8px">待筛选队列 · Collected queue</h3>
+    <p class="note" style="margin:0 0 8px">自动抓来的条目先进这里，核实后才算数。<br>Collected entries wait here until they are checked.</p>
+    <div id="queue" style="font-size:13px;margin-bottom:10px"></div>
+    <p><button id="curateAll">全部标记为已核实</button> <button id="clearNew">清空队列</button></p>
+    <h3 style="font-size:14px;color:var(--muted);margin:18px 0 8px">数据源 · Sources</h3>
+    <table id="srcTbl" style="width:100%;font-size:13px;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:6px;border-bottom:1px solid var(--line)">名称</th><th style="text-align:left;padding:6px;border-bottom:1px solid var(--line)">类型</th><th style="text-align:left;padding:6px;border-bottom:1px solid var(--line)">上次运行</th><th style="text-align:right;padding:6px;border-bottom:1px solid var(--line)">抓到</th><th style="text-align:left;padding:6px;border-bottom:1px solid var(--line)">错误</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <h3 style="font-size:14px;color:var(--muted);margin:18px 0 8px">抓取日志 · Recent runs</h3>
+    <div id="logOut" style="font-size:12px;color:var(--muted)"></div>
+  </div>
+</div>
+
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const API = "https://aeg-stats.xu1760.workers.dev";
+let PW = "";
+let page = 1;
+let category = "";
+const perPage = 12;
+
+const CAT_NAME = {
+  service: "接单服务 Service",
+  agency:  "外包代理 Agency",
+  content: "内容 Content",
+  product: "虚拟产品 Product",
+  resell:  "二手倒卖 Resell",
+  tool:    "工具 Tool",
+  affiliate: "联盟推广 Affiliate",
+};
+const REGION_NAME = { global: "🌍 全球", vn: "🇻🇳 越南", sea: "🌏 东南亚", cn: "🇨🇳 中国" };
+const EFFORT_NAME = { low: "低投入", medium: "中等投入", high: "高投入" };
+const STATUS_NAME = { new: "待筛选", curated: "已核实", archived: "已归档" };
+
+function esc(s){
+  return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+async function api(path){
+  const res = await fetch(API + path + (path.includes("?") ? "&" : "?") + "t=" + Date.now(), {
+    headers: PW ? { "X-Admin-Password": PW } : {},
+    cache: "no-store",
+  });
+  if (res.status === 401) throw new Error("unauthorized");
+  return res.json();
+}
+
+async function loadList(){
+  const p = new URLSearchParams();
+  p.set("page", page);
+  p.set("per_page", perPage);
+  if (category) p.set("category", category);
+  if ($("q").value.trim()) p.set("q", $("q").value.trim());
+  if ($("fRegion").value) p.set("region", $("fRegion").value);
+  if ($("fEffort").value) p.set("effort", $("fEffort").value);
+
+  const d = await api("/api/projects?" + p.toString());
+
+  // category chips with counts
+  const cats = d.facets.category || [];
+  $("cats").innerHTML =
+    `<button class="chip ${category === "" ? "on" : ""}" data-c="">全部<span class="n">${d.total}</span></button>` +
+    cats.map(c => `<button class="chip ${category === c.category ? "on" : ""}" data-c="${esc(c.category)}">${esc(CAT_NAME[c.category] || c.category)}<span class="n">${c.n}</span></button>`).join("");
+  $("cats").querySelectorAll(".chip").forEach(b => {
+    b.onclick = () => { category = b.dataset.c; page = 1; loadList(); };
+  });
+
+  const grid = $("grid");
+  if (!d.projects.length){
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">没有匹配的项目 · No matching projects</div>`;
+  } else {
+    grid.innerHTML = d.projects.map(p => {
+      const stars = p.rating ? "★".repeat(p.rating) + "☆".repeat(5 - p.rating) : "";
+      const money = p.income ? `<span class="tag money">${esc(p.income)}</span>` : "";
+      const status = p.status === "new" ? `<span class="new-badge">待筛选</span>` : "";
+      return `<div class="proj" data-slug="${esc(p.slug)}">
+        <h3>${esc(p.title)}</h3>
+        ${p.title_zh ? `<div class="zh">${esc(p.title_zh)}</div>` : ""}
+        <div class="tags">
+          <span class="tag cat">${esc(CAT_NAME[p.category] || p.category)}</span>
+          ${money}
+          <span class="tag reg">${esc(REGION_NAME[p.region] || p.region)}</span>
+          ${status}
+        </div>
+        <p>${esc((p.summary || "").slice(0, 150))}</p>
+        <div class="meta">
+          <span>${stars ? `<span class="star">${stars}</span>` : ""}</span>
+          <span>投入 <b>${esc(EFFORT_NAME[p.effort] || p.effort || "—")}</b></span>
+          ${p.first_order_days ? `<span>首单 <b>${p.first_order_days} 天</b></span>` : ""}
+          ${p.platform ? `<span>平台 <b>${esc(p.platform)}</b></span>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    grid.querySelectorAll(".proj").forEach(el => {
+      el.onclick = () => openProject(el.dataset.slug);
+    });
+  }
+
+  $("pager").style.display = d.pages > 1 ? "flex" : "none";
+  $("pinfo").textContent = `第 ${(d.page - 1) * d.per_page + 1}-${Math.min(d.total, d.page * d.per_page)} 条 / 共 ${d.total} 条 · 第 ${d.page}/${d.pages} 页`;
+  $("prev").disabled = d.page <= 1;
+  $("next").disabled = d.page >= d.pages;
+}
+
+async function openProject(slug){
+  const d = await api("/api/project/" + encodeURIComponent(slug));
+  const p = d.project;
+  $("dTitle").textContent = p.title;
+  $("dStars").textContent = p.rating ? "★".repeat(p.rating) + "☆".repeat(5 - p.rating) : "";
+  $("dZh").textContent = p.title_zh || "";
+  $("dZh").style.display = p.title_zh ? "block" : "none";
+
+  $("dTags").innerHTML = [
+    `<span class="tag cat">${esc(CAT_NAME[p.category] || p.category)}</span>`,
+    p.income ? `<span class="tag money">${esc(p.income)}</span>` : "",
+    `<span class="tag reg">${esc(REGION_NAME[p.region] || p.region)}</span>`,
+    `<span class="tag">${esc(STATUS_NAME[p.status] || p.status)}</span>`,
+  ].filter(Boolean).join("");
+
+  const kv = [];
+  if (p.platform) kv.push(["平台 Platform", p.platform]);
+  if (p.effort) kv.push(["投入 Effort", EFFORT_NAME[p.effort] || p.effort]);
+  if (p.capital) kv.push(["投入资金 Capital", p.capital]);
+  if (p.first_order_days) kv.push(["第一单 First order", p.first_order_days + " 天内"]);
+  if (p.skills) kv.push(["需要技能 Skills", p.skills]);
+  if (p.tools) kv.push(["用到工具 Tools", p.tools]);
+  if (p.tags) kv.push(["标签 Tags", p.tags]);
+  if (p.source) kv.push(["来源 Source", p.source]);
+  $("dKv").innerHTML = kv.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+
+  $("dBody").textContent = p.detail || p.summary || "";
+  $("dLink").innerHTML = p.url ? `链接 · Link: <a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url)}</a>` : "";
+  $("dNotes").textContent = p.notes || "";
+
+  $("main").style.display = "none";
+  $("detail").classList.add("on");
+  window.scrollTo(0, 0);
+}
+
+$("back").onclick = () => {
+  $("detail").classList.remove("on");
+  $("main").style.display = "block";
+};
+
+$("prev").onclick = () => { if (page > 1){ page--; loadList(); } };
+$("next").onclick = () => { page++; loadList(); };
+
+let timer;
+$("q").oninput = () => { clearTimeout(timer); timer = setTimeout(() => { page = 1; loadList(); }, 350); };
+$("fRegion").onchange = () => { page = 1; loadList(); };
+$("fEffort").onchange = () => { page = 1; loadList(); };
+
+// admin
+$("adminCard").classList.remove("hide");
+$("go").onclick = async () => {
+  PW = $("pw").value;
+  $("aErr").textContent = "";
+  try {
+    await loadList();
+    $("lock").style.display = "none";
+    $("adminBody").style.display = "block";
+    $("aMsg").textContent = "已登录 · Signed in";
+    loadAdmin();
+  } catch (e){
+    PW = "";
+    $("aErr").textContent = "密码错误 · Wrong password";
+  }
+};
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+
+async function loadAdmin(){
+  const d = await api("/api/library-stats");
+  $("srcTbl").querySelector("tbody").innerHTML = (d.sources || []).map(s => `<tr>
+    <td style="padding:6px;border-bottom:1px solid var(--line)">${esc(s.name)}</td>
+    <td style="padding:6px;border-bottom:1px solid var(--line)">${esc(s.kind)}</td>
+    <td style="padding:6px;border-bottom:1px solid var(--line)">${s.last_run ? new Date(s.last_run).toLocaleString("zh-CN") : "—"}</td>
+    <td style="padding:6px;border-bottom:1px solid var(--line);text-align:right">${s.last_count || 0}</td>
+    <td style="padding:6px;border-bottom:1px solid var(--line)">${s.last_error ? `<span style="color:var(--warn)">${esc(s.last_error)}</span>` : ""}</td>
+  </tr>`).join("");
+  loadQueue();
+  $("logOut").textContent = (d.log || []).map(l =>
+    `${new Date(l.ts).toLocaleString("zh-CN")} · ${l.source} · 发现 ${l.found} 条，保留 ${l.kept} 条${l.error ? " · " + l.error : ""}`
+  ).join("\n") || "还没有运行记录";
+}
+
+$("collect").onclick = async () => {
+  $("aMsg").textContent = "正在抓取… · Collecting…";
+  try {
+    const res = await fetch(API + "/api/collect", {
+      method: "POST",
+      headers: { "X-Admin-Password": PW },
+      cache: "no-store",
+    });
+    const d = await res.json();
+    if (!d.ok) throw new Error(d.error || "failed");
+    const sum = (d.results || []).map(r => `${r.source}: ${r.kept}`).join(" · ");
+    $("aMsg").textContent = "完成 · Done — " + sum;
+    loadList(); loadAdmin();
+  } catch (e){
+    $("aMsg").textContent = "失败 · Failed — " + (e.message || e);
+  }
+};
+$("reloadSrc").onclick = loadAdmin;
+
+async function loadQueue(){
+  const d = await api("/api/projects?status=new&per_page=50");
+  const items = d.projects || [];
+  $("queue").innerHTML = items.length
+    ? items.map(p => `<div style="padding:6px 0;border-bottom:1px solid var(--line)">
+        <b>${esc(p.title)}</b>
+        <span class="muted"> · ${esc(p.source || "")}</span>
+        <div class="muted" style="font-size:12px">${esc((p.summary || "").slice(0, 110))}</div>
+      </div>`).join("")
+    : `<div class="muted">队列是空的 · The queue is empty</div>`;
+}
+
+$("curateAll").onclick = async () => {
+  const res = await fetch(API + "/api/project/bulk", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "X-Admin-Password": PW },
+    body: JSON.stringify({ action: "curate_all" }),
+  });
+  const d = await res.json();
+  $("aMsg").textContent = d.ok ? `已标记 ${d.changed} 条 · Marked ${d.changed}` : "失败";
+  loadList(); loadQueue(); loadAdmin();
+};
+
+$("clearNew").onclick = async () => {
+  const res = await fetch(API + "/api/project/bulk", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "X-Admin-Password": PW },
+    body: JSON.stringify({ action: "clear_new" }),
+  });
+  const d = await res.json();
+  $("aMsg").textContent = d.ok ? `已清空 ${d.changed} 条 · Cleared ${d.changed}` : "失败";
+  loadList(); loadQueue(); loadAdmin();
+};
+
+loadList();
+</script>
+</body>
+</html>
