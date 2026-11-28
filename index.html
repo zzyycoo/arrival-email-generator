@@ -73,7 +73,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <button type="button" data-lang="en">EN</button>
   <button type="button" data-lang="vi">VI</button>
 </div>
-<h1>Arrival Email Generator<span class="ver" id="ver">v1.23</span></h1>
+<h1>Arrival Email Generator<span class="ver" id="ver">v1.24</span></h1>
 <p class="sub" data-i18n="sub"></p>
 
 <section class="panel hide" id="setup">
@@ -501,6 +501,10 @@ function invalidate(){ $("send").disabled = true; }
 // The reporting endpoint. Only addresses that actually resolve are listed:
 // a beacon sent to a dead host is dropped silently, so a broken entry here
 // would swallow every report.
+// A token the server checks before it accepts a report. It is not a secret
+// in the strict sense, since the page is public, but it stops casual
+// flooding of the database.
+const STATS_TOKEN = "oRKgwLOffzC2lkUiUIKZjC9nJNfVeOp7";
 const STATS_CANDIDATES = [
   "https://stats.godpleaseplease.online/api/log",
   "https://aeg-stats.xu1760.workers.dev/api/log",
@@ -572,7 +576,10 @@ function reportUsage(event, guests, groups){
     STATS_CANDIDATES.forEach(base => {
       fetch(base, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+          "X-Stats-Token": STATS_TOKEN,
+        },
         body,
         keepalive: true,
       }).catch(() => {});
@@ -607,7 +614,10 @@ setTimeout(pickStatsApi, 1500);
       }
       fetch(base, {
         method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+          "X-Stats-Token": STATS_TOKEN,
+        },
         body,
         keepalive: true,
       }).catch(() => {});
