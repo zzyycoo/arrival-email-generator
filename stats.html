@@ -33,6 +33,11 @@
   th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
   td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
   .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:60px}
+  .pager{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .pager button{font-size:13px;padding:4px 12px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .pager button:hover:not(:disabled){background:#f2f2f2}
+  .pager button:disabled{opacity:.4;cursor:default}
+  .pager span{font-size:12px}
   .bar i{display:block;height:100%;background:var(--accent)}
   .trend{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:6px}
   .trend .d{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
@@ -124,6 +129,11 @@
   <div class="card">
     <h2>最近记录 · Recent</h2>
     <table id="recTbl"><thead><tr><th>时间</th><th>事件</th><th>设备</th><th>语言</th><th>代表码</th><th class="num">客人</th><th class="num">组</th></tr></thead><tbody></tbody></table>
+    <div class="pager" id="recPager">
+      <button id="recPrev" type="button">上一页</button>
+      <span id="recInfo" class="muted"></span>
+      <button id="recNext" type="button">下一页</button>
+    </div>
   </div>
 
   <p><button id="refresh">刷新</button> <button id="logout" class="muted">退出</button></p>
@@ -134,6 +144,7 @@
 const $ = id => document.getElementById(id);
 const API = "https://aeg-stats.xu1760.workers.dev";
 let PW = "";
+let recPage = 1;
 
 const LANG_NAME = { zh: "中文", en: "English", vi: "Tiếng Việt" };
 
@@ -146,10 +157,11 @@ function fmtTime(iso){
   return d.toLocaleString("zh-CN", { month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
 }
 
-async function load(){
+async function load(page){
   // Never let the browser reuse a cached answer, otherwise the refresh
   // button appears to do nothing.
-  const bust = "?t=" + Date.now();
+  if (page) recPage = page;
+  const bust = "?t=" + Date.now() + "&page=" + recPage;
   const res = await fetch(API + "/api/stats" + bust, {
     headers: { "X-Admin-Password": PW },
     cache: "no-store",
@@ -304,7 +316,7 @@ function render(d, server){
     : `<tr><td colspan="4" class="muted">暂无数据</td></tr>`;
 
   // recent
-  const EV2 = { generate: "生成", send: "发送" };
+  const EV2 = { generate: "生成", send: "发送", visit: "访问" };
   $("recTbl").querySelector("tbody").innerHTML = (d.recent || []).length
     ? d.recent.map(r => `<tr>
         <td class="muted">${fmtTime(r.ts)}</td>
@@ -315,6 +327,19 @@ function render(d, server){
         <td class="num">${r.guests}</td><td class="num">${r.groups}</td>
       </tr>`).join("")
     : `<tr><td colspan="7" class="muted">暂无数据</td></tr>`;
+
+  // pager for the recent records
+  const total = d.recent_total || 0;
+  const pages = d.recent_pages || 1;
+  const page = d.recent_page || 1;
+  const per = d.recent_per_page || 10;
+  const from = total === 0 ? 0 : (page - 1) * per + 1;
+  const to = Math.min(total, page * per);
+  $("recInfo").textContent = total === 0
+    ? "共 0 条"
+    : `第 ${from}-${to} 条 / 共 ${total} 条 · 第 ${page}/${pages} 页`;
+  $("recPrev").disabled = page <= 1;
+  $("recNext").disabled = page >= pages;
 }
 
 $("go").onclick = async () => {
@@ -323,6 +348,8 @@ $("go").onclick = async () => {
   await load();
 };
 $("pw").addEventListener("keydown", e => { if (e.key === "Enter") $("go").click(); });
+$("recPrev").onclick = () => load(Math.max(1, recPage - 1));
+$("recNext").onclick = () => load(recPage + 1);
 $("refresh").onclick = async () => {
   const btn = $("refresh");
   const label = btn.textContent;
