@@ -11,11 +11,19 @@ Web tool for travel agents to prepare the new-member arrival email for The Grand
 - Download the table as a PNG image
 - Representative Code is saved in the browser after first use
 
-Current version: v1.24
+Current version: v1.25
 
 Single static file (`index.html`), no build step. Host with GitHub Pages.
 
 ## Changelog
+
+### v1.25
+
+- **An AI side project library** was added. It lists projects that can earn
+  money, with the region, the effort, the tools and the time to the first
+  order for each one. The curated entries were checked by hand. A collector
+  watches a set of feeds and puts new leads in a queue that waits for a
+  review, and it runs on its own once a day.
 
 ### v1.24
 
